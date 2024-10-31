@@ -1,0 +1,130 @@
+/* VoiceChat.module.css */
+.container {
+    padding: 1.25rem;
+    max-width: 28rem;
+    margin: 0 auto;
+}
+
+.card {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+    margin-bottom: 1.5rem;
+}
+
+.title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.status {
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.statusConnected {
+    color: #48bb78;
+}
+
+.statusConnecting {
+    color: #d69e2e;
+}
+
+.statusDisconnected {
+    color: #e53e3e;
+}
+
+.button {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.buttonMuted {
+    background-color: #e2e8f0;
+    color: #2d3748;
+}
+
+.buttonUnmuted {
+    background-color: #4299e1;
+    color: #ffffff;
+}
+
+.audioIndicator {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #718096;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.audioReady {
+    background-color: #48bb78;
+}
+
+.audioNotReady {
+    background-color: #e53e3e;
+}
+
+.participantsSection {
+    margin-top: 1.5rem;
+}
+
+.participantCard {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background-color: #f7fafc;
+    border-radius: 0.375rem;
+}
+
+.participantName {
+    font-weight: 500;
+    color: #2d3748;
+}
+
+.participantStatus {
+    font-size: 0.875rem;
+    color: #a0aec0;
+}
+
+.chatSection {
+    margin-top: 1.5rem;
+}
+
+.chatInput {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 0.375rem;
+}
+
+.sendButton {
+    padding: 0.5rem 1rem;
+    background-color: #4299e1;
+    color: #ffffff;
+    border-radius: 0.375rem;
+}
+
+.debugInfo {
+    margin-top: 1.5rem;
+    padding: 0.75rem;
+    background-color: #f7fafc;
+    font-size: 0.75rem;
+    color: #718096;
+    border-radius: 0.375rem;
+}
