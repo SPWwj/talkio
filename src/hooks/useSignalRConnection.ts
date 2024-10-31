@@ -31,7 +31,7 @@ export const useSignalRConnection = (roomId: string): SignalRHookReturn => {
 
   useEffect(() => {
     const newConnection = new HubConnectionBuilder()
-      .withUrl('https://localhost:7166/hubs/rtc')
+      .withUrl('https://chatiox.azurewebsites.net/hubs/rtc')
       .withAutomaticReconnect()
       .build();
 
