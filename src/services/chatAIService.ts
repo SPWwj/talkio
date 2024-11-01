@@ -1,5 +1,4 @@
-import { AssistantDto } from "@/types/assistantDto";
-import { Message } from "@/types/message";
+import { AssistantDto, Message } from "@/types/message";
 
 ;
 

@@ -10,8 +10,8 @@ import MessageBubble from './MessageBubble';
 interface ChatUIProps {
     messages: Message[];
     newMessage: string;
-    isStreaming: boolean;
-    assistantInfo: any;
+    isLoading: boolean;
+    receiverInfo: any;
     onMessageChange: (value: string) => void;
     onSendMessage: () => void;
     messagesEndRef: React.RefObject<HTMLDivElement>;
@@ -20,8 +20,8 @@ interface ChatUIProps {
 const ChatUI: React.FC<ChatUIProps> = ({
     messages,
     newMessage,
-    isStreaming,
-    assistantInfo,
+    isLoading: isStreaming,
+    receiverInfo: assistantInfo,
     onMessageChange,
     onSendMessage,
     messagesEndRef

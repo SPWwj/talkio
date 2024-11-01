@@ -1,64 +1,97 @@
-import { useEffect, useState } from "react";
-import ChatService from "../services/chatService";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import ChatHubService from "../services/chatHubService";
+import { Message, Participant, RoomInfo, ReceiverInfo, GroupReceiver } from "@/types/message";
 
-export function useChatService(accessToken: string, room: string) {
-  const [ chatService, setChatService ] = useState<ChatService | null>(null);
-  const [ messages, setMessages ] = useState<Array<{ userName: string; message: string }>>([]);
-  const [ roomMembers, setRoomMembers ] = useState<string[]>([]);
-  const [ notifications, setNotifications ] = useState<string[]>([]);
+export function useChatService(accessToken: string, room: RoomInfo) {
+  const [chatService, setChatService] = useState<ChatHubService | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [notifications, setNotifications] = useState<string[]>([]);
+  const [newMessage, setNewMessage] = useState<Message | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const initializeChatService = useCallback(async () => {
+    setLoading(true);
+    const serviceInstance = new ChatHubService(accessToken);
+    await serviceInstance.startConnection();
+    setChatService(serviceInstance);
+
+    // Join the room regardless of whether it's a direct or group chat
+    serviceInstance.joinRoom(room.roomId);
+
+    setLoading(false);
+  }, [accessToken, room]);
+
   useEffect(() => {
     if (accessToken) {
-      const serviceInstance = new ChatService(accessToken);
+      initializeChatService();
 
-      async function connectAndJoinRoom() {
-        await serviceInstance.startConnection();
-        setChatService(serviceInstance);
-        serviceInstance.joinRoom(room);
-      }
-
-      connectAndJoinRoom();
-
-      // Register message handlers
-      serviceInstance.onReceiveMessage((userName, message) => {
-        setMessages(prev => [ ...prev, { userName, message } ]);
+      chatService?.onReceiveMessage((message: Message) => {
+        setMessages(prev => [...prev, message]);
       });
 
-      serviceInstance.onRoomMembers(members => {
-        setRoomMembers(members);
+      chatService?.onRoomMembers((members: Participant[]) => {
+        setParticipants(members);
       });
 
-      serviceInstance.onRoomMembersUpdated(members => {
-        setRoomMembers(members);
-      });
-
-      serviceInstance.onUserJoined((userName, roomName) => {
-        setNotifications(prev => [ ...prev, `${userName} joined ${roomName}` ]);
-      });
-
-      serviceInstance.onUserLeft((userName, roomName) => {
-        setNotifications(prev => [ ...prev, `${userName} left ${roomName}` ]);
-      });
+      chatService?.onUserJoined((notification: string) =>
+        setNotifications(prev => [...prev, notification])
+      );
+      chatService?.onUserLeft((notification: string) =>
+        setNotifications(prev => [...prev, notification])
+      );
 
       return () => {
-        serviceInstance.leaveRoom(room);
-        serviceInstance.offReceiveMessage();
-        serviceInstance.offRoomMembers();
-        serviceInstance.offRoomMembersUpdated();
-        serviceInstance.offUserJoined();
-        serviceInstance.offUserLeft();
-        serviceInstance.stopConnection();
+        chatService?.leaveRoom(room.roomId);
+        chatService?.offReceiveMessage();
+        chatService?.offRoomMembers();
+        chatService?.offUserJoined();
+        chatService?.offUserLeft();
+        chatService?.stopConnection();
       };
     }
-  }, [ accessToken, room ]);
+  }, [accessToken, room, initializeChatService, chatService]);
 
-  const sendMessage = (message: string) => {
-    chatService?.send(room, message);
+  const handleSend = () => {
+    if (newMessage && newMessage.content.trim()) {
+      chatService?.send(room.roomId, newMessage.content);
+      setMessages(prev => [...prev, newMessage]);
+      setNewMessage(null);
+    }
   };
+
+  const startReceiving = () => {
+    chatService?.onReceiveMessage((message: Message) => {
+      setMessages(prev => [...prev, message]);
+    });
+  };
+
+  const derivedReceiverInfo: ReceiverInfo = useMemo(() => {
+    if (room.type === "group") {
+      return {
+        id: room.roomId,
+        name: "Group Chat",
+        type: "group",
+        members: participants,
+      } as GroupReceiver;
+    } else if (participants.length === 1) {
+      return participants[0];
+    }
+    return null;
+  }, [room, participants]);
 
   return {
     messages,
-    roomMembers,
+    setMessages,
+    roomInfo: room,
+    participants,
+    derivedReceiverInfo,
     notifications,
-    sendMessage,
+    newMessage,
+    setNewMessage,
+    handleSend,
+    loading,
+    loadData: initializeChatService,
+    startReceiving,
   };
 }
