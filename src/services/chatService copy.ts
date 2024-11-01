@@ -70,6 +70,7 @@ export const fetchConversationHistory = async (signal: AbortSignal): Promise<Mes
         }
 
         const history = await response.json();
+        console.log(history)
         return history;
 
     } catch (error) {

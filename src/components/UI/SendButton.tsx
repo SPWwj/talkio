@@ -1,6 +1,6 @@
 import React from 'react';
 import { SendIcon } from 'lucide-react';
-import styles from '@/components/Chat/Chat.module.css';
+import styles from '@/components/UI/SendButton.module.css';
 
 interface SendButtonProps {
   onClick: () => void;

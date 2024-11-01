@@ -1,28 +1,20 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRive } from "@rive-app/react-canvas";
-import { FaMicrophone, FaMicrophoneSlash } from "react-icons/fa"; // Importing icons
-import styles from '@/components/UI/StatusBar.module.css';
-
-interface AssistantInfo {
-  name: string;
-  description?: string;
-  model: string;
-  createdAt: number;
-}
+import { FaMicrophone, FaMicrophoneSlash } from "react-icons/fa";
+import styles from "@/components/UI/StatusBar.module.css";
+import { ReceiverInfo } from "@/types/message";
 
 interface StatusBarProps {
-  assistantInfo: AssistantInfo;
+  receiverInfo: ReceiverInfo;
 }
 
-export default function StatusBar({ assistantInfo }: StatusBarProps) {
-  // Small avatar Rive instance
+export default function StatusBar({ receiverInfo }: StatusBarProps) {
   const { RiveComponent: SmallAvatar } = useRive({
     src: "/rive/cat_not_track_mouse.riv",
     stateMachines: "State Machine 1",
     autoplay: true,
   });
 
-  // Large avatar Rive instance
   const { RiveComponent: LargeAvatar } = useRive({
     src: "/rive/cat_not_track_mouse.riv",
     stateMachines: "State Machine 1",
@@ -34,7 +26,6 @@ export default function StatusBar({ assistantInfo }: StatusBarProps) {
 
   const handleVoiceToggle = () => {
     setIsVoiceEnabled((prev) => !prev);
-    // Add voice enable/disable logic here
   };
 
   const handleAvatarClick = () => {
@@ -44,18 +35,17 @@ export default function StatusBar({ assistantInfo }: StatusBarProps) {
   const handleCloseModal = () => {
     setIsModalOpen(false);
   };
-
   return (
     <div className={styles.statusBar}>
-      <div className={styles.appTitle}>Chat with Assistant</div>
+      <div className={styles.appTitle}>
+        Chat with {receiverInfo.name}
+      </div>
 
       <div className={styles.avatarContainer}>
-        {/* Small avatar */}
         <div className={styles.avatar} onClick={handleAvatarClick}>
           <SmallAvatar />
         </div>
 
-        {/* Voice Toggle Icon beside avatar */}
         <div className={styles.voiceToggleIcon} onClick={handleVoiceToggle}>
           {isVoiceEnabled ? (
             <FaMicrophone className={styles.iconEnabled} />
@@ -64,29 +54,60 @@ export default function StatusBar({ assistantInfo }: StatusBarProps) {
           )}
         </div>
 
-        <div className={styles.assistantCard}>
-          <h3>{assistantInfo.name}</h3>
-          <p>
-            <strong>Model:</strong> {assistantInfo.model}
-          </p>
+        <div className={styles.receiverCard}>
+          <h3>{receiverInfo.name}</h3>
+
+          {/* Conditionally render fields based on receiver type */}
+          {"model" in receiverInfo && receiverInfo.model && (
+            <p>
+              <strong>Model:</strong> {receiverInfo.model}
+            </p>
+          )}
           <p>
             <strong>Description:</strong>{" "}
-            {assistantInfo.description || "No description available."}
+            {receiverInfo.description || "No description available."}
           </p>
-          <p>
-            <strong>Created At:</strong>{" "}
-            {new Date(assistantInfo.createdAt).toLocaleString()}
-          </p>
+          {receiverInfo.createdAt && (
+            <p>
+              <strong>Created At:</strong>{" "}
+              {new Date(receiverInfo.createdAt).toLocaleString()}
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Fullscreen Modal */}
       {isModalOpen && (
         <div className={styles.modal} onClick={handleCloseModal}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            {/* Large avatar */}
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className={styles.largeAvatar}>
               <LargeAvatar />
+            </div>
+            <div className={styles.detailedInfo}>
+              <h3>{receiverInfo.name}</h3>
+
+              {"model" in receiverInfo && receiverInfo.model && (
+                <p>
+                  <strong>Model:</strong> {receiverInfo.model}
+                </p>
+              )}
+              <p>
+                <strong>Description:</strong>{" "}
+                {receiverInfo.description || "No description available."}
+              </p>
+              {receiverInfo.createdAt && (
+                <p>
+                  <strong>Created At:</strong>{" "}
+                  {new Date(receiverInfo.createdAt).toLocaleString()}
+                </p>
+              )}
+              {"metadata" in receiverInfo && receiverInfo.metadata && (
+                <p>
+                  <strong>Metadata:</strong> {receiverInfo.metadata.toString()}
+                </p>
+              )}
             </div>
           </div>
         </div>
