@@ -1,75 +1,97 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+// useChatService.ts
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import ChatHubService from "../services/chatHubService";
-import { Message, Participant, RoomInfo, ReceiverInfo, GroupReceiver, IChat } from "@/types/message";
+import {
+  Message,
+  Participant,
+  RoomInfo,
+  ReceiverInfo,
+  GroupReceiver,
+  IChat,
+} from "@/types/message";
 
 export function useChatService(accessToken: string, room: RoomInfo): IChat {
-  const [chatService, setChatService] = useState<ChatHubService | null>(null);
+  const chatServiceRef = useRef<ChatHubService>();
+  if (!chatServiceRef.current) {
+    chatServiceRef.current = new ChatHubService(accessToken);
+  }
+  const chatService = chatServiceRef.current;
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [notifications, setNotifications] = useState<string[]>([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState<boolean>(false);
 
   const initializeChatService = useCallback(async () => {
-    setLoading(true);
-    const serviceInstance = new ChatHubService(accessToken);
-    await serviceInstance.startConnection();
-    setChatService(serviceInstance);
+    if (!chatService) return;
 
-    serviceInstance.joinRoom(room.roomId);
-    setLoading(false);
-  }, [accessToken, room]);
+    try {
+      setLoading(true);
+      await chatService.startConnection();
+      await chatService.joinRoom(room.roomId);
+    } catch (error) {
+      console.error("Failed to initialize chat service:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [chatService, room.roomId]);
 
   useEffect(() => {
-    if (accessToken) {
-      initializeChatService();
+    if (!chatService) return;
 
-      chatService?.onReceiveMessage((message: Message) => {
-        setMessages((prev) => [...prev, message]);
-      });
-
-      chatService?.onRoomMembers((members: Participant[]) => {
-        setParticipants(members);
-      });
-
-      chatService?.onUserJoined((notification: string) =>
-        setNotifications((prev) => [...prev, notification])
-      );
-      chatService?.onUserLeft((notification: string) =>
-        setNotifications((prev) => [...prev, notification])
-      );
-
-      return () => {
-        chatService?.leaveRoom(room.roomId);
-        chatService?.offReceiveMessage();
-        chatService?.offRoomMembers();
-        chatService?.offUserJoined();
-        chatService?.offUserLeft();
-        chatService?.stopConnection();
-      };
-    }
-  }, [accessToken, room, initializeChatService, chatService]);
-
-  const handleSend = () => {
-    if (newMessage.trim()) {
-      chatService?.send(room.roomId, newMessage);
-      const userMessage: Message = {
-        id: generateUniqueId(),
-        role: 'user',
-        sender: 'user',
-        content: newMessage,
-        datetime: new Date().toLocaleString(),
-      };
-      setMessages((prev) => [...prev, userMessage]);
-      setNewMessage('');
-    }
-  };
-
-  const startReceiving = () => {
-    chatService?.onReceiveMessage((message: Message) => {
+    const messageHandler = (message: Message) => {
       setMessages((prev) => [...prev, message]);
-    });
-  };
+    };
+
+    const membersHandler = (members: Participant[]) => {
+      setParticipants(members);
+    };
+
+    const userJoinedHandler = (userName: string, roomName: string) => {
+      setNotifications((prev) => [...prev, `${userName} joined ${roomName}`]);
+    };
+
+    const userLeftHandler = (userName: string, roomName: string) => {
+      setNotifications((prev) => [...prev, `${userName} left ${roomName}`]);
+    };
+
+    // Register event handlers
+    chatService.onReceiveMessage(messageHandler);
+    chatService.onRoomMembers(membersHandler);
+    chatService.onUserJoined(userJoinedHandler);
+    chatService.onUserLeft(userLeftHandler);
+
+    // Initialize the connection
+    initializeChatService();
+
+    return () => {
+      // Clean up event handlers
+      chatService.offReceiveMessage(messageHandler);
+      chatService.offRoomMembers(membersHandler);
+      chatService.offUserJoined(userJoinedHandler);
+      chatService.offUserLeft(userLeftHandler);
+      chatService.leaveRoom(room.roomId);
+      // Do not stop the connection here
+    };
+  }, [chatService, room.roomId]);
+
+  // Stop connection when component unmounts
+  useEffect(() => {
+    return () => {
+      chatService.stopConnection();
+    };
+  }, [chatService]);
+
+  const handleSend = useCallback(() => {
+    if (!chatService) return;
+
+    if (newMessage.trim()) {
+      chatService.send(room.roomId, newMessage);
+      setNewMessage("");
+    }
+  }, [chatService, newMessage, room.roomId]);
+
 
   const derivedReceiverInfo: ReceiverInfo = useMemo(() => {
     if (room.type === "group") {
@@ -80,7 +102,11 @@ export function useChatService(accessToken: string, room: RoomInfo): IChat {
         members: participants,
       } as GroupReceiver;
     } else if (participants.length === 1) {
-      return participants[0];
+      return {
+        id: participants[0].id,
+        username: participants[0].username,
+        type: "direct",
+      };
     }
     return null;
   }, [room, participants]);

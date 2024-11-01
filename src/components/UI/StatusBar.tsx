@@ -44,7 +44,7 @@ export default function StatusBar({ receiverInfo }: StatusBarProps) {
   }, []);
 
   const getDisplayName = useCallback((receiver: NonNullable<ReceiverInfo>) => {
-    if (isParticipant(receiver)) return receiver.displayName;
+    if (isParticipant(receiver)) return receiver.username;
     return receiver.name;
   }, []);
 
@@ -89,7 +89,7 @@ export default function StatusBar({ receiverInfo }: StatusBarProps) {
           </p>
           <p>
             <strong>Members:</strong>{" "}
-            {receiverInfo.members.map(m => m.displayName).join(", ")}
+            {receiverInfo.members.map(m => m.username).join(", ")}
           </p>
         </>
       );

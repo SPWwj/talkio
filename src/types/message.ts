@@ -24,13 +24,7 @@ export interface IReceiveMessage {
 }
 export interface Participant {
     id: string;
-    displayName: string;
-}
-
-
-export interface Participant {
-    id: string;
-    displayName: string;
+    username: string;
 }
 
 export interface GroupReceiver {
@@ -67,4 +61,22 @@ export interface IChat {
     setNewMessage: React.Dispatch<React.SetStateAction<string>>;
     handleSend: () => void;
     loadData: () => Promise<void>; // Load initial data for both chat types
+}
+
+export interface JoinRoomRequestDto {
+    RoomId: string;
+}
+
+export interface LeaveRoomRequestDto {
+    RoomId: string;
+}
+
+export interface SendMessageRequestDto {
+    RoomId: string;
+    Message: Message;
+}
+
+export interface RoomInfoDto {
+    RoomId: string;
+    Type: string; // 'group' | 'direct'
 }

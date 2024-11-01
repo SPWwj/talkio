@@ -20,7 +20,7 @@ export default function Page({
         <div>
             <h1>Welcome to Room: {roomName}</h1>
             <p>Your access token: {token}</p>
-            <ChatContainer token={token} roomId={roomName} />
+            <ChatContainer token={"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyMzQ1Njc4OTAiLCJ1c2VybmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.VvAAr5KTI8wIv5qkI88X8qOehQW6nMIWcxiNhq4jXas"} roomId={roomName} />
         </div>
     );
 }

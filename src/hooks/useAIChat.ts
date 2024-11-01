@@ -23,6 +23,8 @@ export const useAIChat = (roomId: string, token: string): IChat => {
                 sender: msg.role === 'user' ? 'user' : info?.name || 'assistant',
             }));
 
+            console.log(processedMessages)
+
             setMessages(processedMessages);
         } catch (error) {
             console.error('Failed to fetch initial data:', error);
@@ -80,7 +82,7 @@ export const useAIChat = (roomId: string, token: string): IChat => {
     };
 
     const updateReceiverMessage = (messageId: string, content: string) => {
-        setMessages((prevMessages) => prevMessages.map((msg) => (msg.id === messageId ? { ...msg, content } : msg)));
+        setMessages((prevMessages) => prevMessages.map((msg) => (msg.id === messageId ? { ...msg, content: content } : msg)));
     };
 
     const handleSend = () => {
