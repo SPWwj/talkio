@@ -1,5 +1,6 @@
 "use client";
 import ChatAIContainer from "@/components/Chat/ChatAIContainer";
+import ChatContainer from "@/components/Chat/ChatContainer";
 import React, { use } from "react";
 
 export default function Page({
@@ -19,7 +20,7 @@ export default function Page({
         <div>
             <h1>Welcome to Room: {roomName}</h1>
             <p>Your access token: {token}</p>
-            <ChatAIContainer token={token} roomId={roomName} />
+            <ChatContainer token={token} roomId={roomName} />
         </div>
     );
 }

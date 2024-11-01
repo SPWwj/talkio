@@ -1,13 +1,13 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import ChatHubService from "../services/chatHubService";
-import { Message, Participant, RoomInfo, ReceiverInfo, GroupReceiver } from "@/types/message";
+import { Message, Participant, RoomInfo, ReceiverInfo, GroupReceiver, IChat } from "@/types/message";
 
-export function useChatService(accessToken: string, room: RoomInfo) {
+export function useChatService(accessToken: string, room: RoomInfo): IChat {
   const [chatService, setChatService] = useState<ChatHubService | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [notifications, setNotifications] = useState<string[]>([]);
-  const [newMessage, setNewMessage] = useState<Message | null>(null);
+  const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState<boolean>(false);
 
   const initializeChatService = useCallback(async () => {
@@ -16,9 +16,7 @@ export function useChatService(accessToken: string, room: RoomInfo) {
     await serviceInstance.startConnection();
     setChatService(serviceInstance);
 
-    // Join the room regardless of whether it's a direct or group chat
     serviceInstance.joinRoom(room.roomId);
-
     setLoading(false);
   }, [accessToken, room]);
 
@@ -27,7 +25,7 @@ export function useChatService(accessToken: string, room: RoomInfo) {
       initializeChatService();
 
       chatService?.onReceiveMessage((message: Message) => {
-        setMessages(prev => [...prev, message]);
+        setMessages((prev) => [...prev, message]);
       });
 
       chatService?.onRoomMembers((members: Participant[]) => {
@@ -35,10 +33,10 @@ export function useChatService(accessToken: string, room: RoomInfo) {
       });
 
       chatService?.onUserJoined((notification: string) =>
-        setNotifications(prev => [...prev, notification])
+        setNotifications((prev) => [...prev, notification])
       );
       chatService?.onUserLeft((notification: string) =>
-        setNotifications(prev => [...prev, notification])
+        setNotifications((prev) => [...prev, notification])
       );
 
       return () => {
@@ -53,16 +51,23 @@ export function useChatService(accessToken: string, room: RoomInfo) {
   }, [accessToken, room, initializeChatService, chatService]);
 
   const handleSend = () => {
-    if (newMessage && newMessage.content.trim()) {
-      chatService?.send(room.roomId, newMessage.content);
-      setMessages(prev => [...prev, newMessage]);
-      setNewMessage(null);
+    if (newMessage.trim()) {
+      chatService?.send(room.roomId, newMessage);
+      const userMessage: Message = {
+        id: generateUniqueId(),
+        role: 'user',
+        sender: 'user',
+        content: newMessage,
+        datetime: new Date().toLocaleString(),
+      };
+      setMessages((prev) => [...prev, userMessage]);
+      setNewMessage('');
     }
   };
 
   const startReceiving = () => {
     chatService?.onReceiveMessage((message: Message) => {
-      setMessages(prev => [...prev, message]);
+      setMessages((prev) => [...prev, message]);
     });
   };
 
@@ -82,16 +87,21 @@ export function useChatService(accessToken: string, room: RoomInfo) {
 
   return {
     messages,
-    setMessages,
-    roomInfo: room,
-    participants,
-    derivedReceiverInfo,
-    notifications,
+    receiverInfo: derivedReceiverInfo,
     newMessage,
     setNewMessage,
     handleSend,
     loading,
     loadData: initializeChatService,
-    startReceiving,
   };
 }
+
+const generateUniqueId = (() => {
+  let counter = 0;
+  return () => {
+    const timestamp = Date.now();
+    const uniqueId = `${timestamp}-${counter}`;
+    counter = (counter + 1) % 1000;
+    return uniqueId;
+  };
+})();
