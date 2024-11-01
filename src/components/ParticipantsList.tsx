@@ -2,7 +2,7 @@
 
 import React from "react";
 import styles from "../app/chat_room/VoiceChat.module.css";
-import {Participant} from "@/app/types/types";
+import {Participant} from "@/types/types";
 
 interface ParticipantsListProps {
 	myParticipantInfo: Participant | null;

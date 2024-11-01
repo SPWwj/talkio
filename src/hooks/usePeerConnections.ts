@@ -1,6 +1,6 @@
 "use client"
 
-import { Participant } from '@/app/types/types';
+import { Participant } from '@/types/types';
 import { useEffect, useRef } from 'react';
 
 export const usePeerConnections = (
