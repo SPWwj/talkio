@@ -1,4 +1,4 @@
 "use client"
-import ChatComponent from "@/components/Chat/ChatComponent";
+import ChatContainer from "@/components/Chat/ChatContainer";
 
-export default ChatComponent;
+export default ChatContainer;
