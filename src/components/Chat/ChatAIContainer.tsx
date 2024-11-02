@@ -2,7 +2,6 @@
 import React, {useRef} from "react";
 import {useAIChat} from "@/hooks/useAIChat";
 import ChatUI from "./ChatUI";
-
 interface ChatContainerProps {
 	roomId: string;
 	token: string;
