@@ -28,7 +28,7 @@ export function useChatService(
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState<boolean>(false);
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
-  const [localAudioLevel, setLocalAudioLevel] = useState(0);
+  const setLocalAudioLevel = useState(0)[ 1 ];
 
   const isVoiceEnabledRef = useRef(isVoiceEnabled);
   useEffect(() => {
@@ -169,9 +169,9 @@ export function useChatService(
       chatService.offUserJoined(userJoinedHandler);
       chatService.offUserLeft(userLeftHandler);
 
-      chatService.offReceiveOffer(webRTCHandlersRef.current.handleOffer);
-      chatService.offReceiveAnswer(webRTCHandlersRef.current.handleAnswer);
-      chatService.offReceiveIceCandidate(webRTCHandlersRef.current.handleIceCandidate);
+      chatService.offReceiveOffer(webRTCHandlersRef!.current.handleOffer);
+      chatService.offReceiveAnswer(webRTCHandlersRef!.current.handleAnswer);
+      chatService.offReceiveIceCandidate(webRTCHandlersRef!.current.handleIceCandidate);
 
       chatService.leaveRoom(room.roomId);
       webRTCServiceRef.current?.cleanup();

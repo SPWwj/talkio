@@ -12,8 +12,9 @@ import {
   LogLevel,
   HubConnectionState,
 } from "@microsoft/signalr";
+import ChatService from "./chatService";
 
-class ChatHubService {
+class ChatHubService implements ChatService {
   private connection: HubConnection | null = null;
   private isConnecting: boolean = false;
   private connectionEstablishedPromise: Promise<void> | null = null;

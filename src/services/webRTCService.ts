@@ -1,6 +1,7 @@
 // WebRTCService.ts
 import { MutableRefObject } from 'react';
 import { AudioAnalyzer, AudioAnalyzers, WebRTCDebugService } from './WebRTCDebugService';
+import ChatService from './chatService';
 
 export class WebRTCService {
     private peerConnection: RTCPeerConnection | null = null;
@@ -13,7 +14,7 @@ export class WebRTCService {
     };
 
     constructor(
-        private readonly chatService: any,
+        private readonly chatService: ChatService,
         private readonly isVoiceEnabledRef: MutableRefObject<boolean>,
         private readonly onRemoteStream: (stream: MediaStream) => void,
         private readonly onAudioLevel?: (localLevel: number, remoteLevel: number) => void
