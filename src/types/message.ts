@@ -35,13 +35,6 @@ export interface GroupReceiver {
     type: 'group';
     members: UserInfo[];
 }
-
-export type ReceiverInfo = AssistantDto | UserInfo | GroupReceiver | null;
-export interface RoomInfo {
-    roomId: string;
-    type: 'group' | 'direct';
-}
-
 export interface AssistantDto {
     id: string;
     object: string;
@@ -55,6 +48,13 @@ export interface AssistantDto {
     temperature?: number;
     responseFormat?: string;
 }
+export type ReceiverInfo = AssistantDto | UserInfo | GroupReceiver | null;
+export interface RoomInfo {
+    roomId: string;
+    type: 'group' | 'direct';
+}
+
+
 export interface IChat {
     messages: Message[];
     receiverInfo: ReceiverInfo | null;
@@ -64,7 +64,12 @@ export interface IChat {
     handleSend: () => void;
     loadData: () => Promise<void>;
     myInfo: UserInfo;
+    remoteStreams?: MediaStream[] | null;
+    toggleVoice?: () => Promise<void> | null;
+    isVoiceEnabled?: boolean | null;
+    notifications?: string[] | null;
 }
+
 
 export interface JoinRoomRequestDto {
     RoomId: string;

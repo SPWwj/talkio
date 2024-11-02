@@ -1,19 +1,20 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useRive } from "@rive-app/react-canvas";
 import { FaMicrophone, FaMicrophoneSlash } from "react-icons/fa";
 import styles from "@/components/UI/StatusBar.module.css";
-import { ReceiverInfo, Participant, GroupReceiver, AssistantDto } from "@/types/message";
+import { ReceiverInfo, GroupReceiver, AssistantDto, UserInfo } from "@/types/message";
 
 interface StatusBarProps {
   receiverInfo: ReceiverInfo | null;
+  onToggleVoice?: () => void;
+  isVoiceEnabled: boolean | null; 
 }
 
-// Type guards for each receiver type
 const isAssistant = (receiver: NonNullable<ReceiverInfo>): receiver is AssistantDto => {
   return 'model' in receiver;
 };
 
-const isParticipant = (receiver: NonNullable<ReceiverInfo>): receiver is Participant => {
+const isParticipant = (receiver: NonNullable<ReceiverInfo>): receiver is UserInfo => {
   return 'displayName' in receiver && !('type' in receiver);
 };
 
@@ -21,19 +22,14 @@ const isGroup = (receiver: NonNullable<ReceiverInfo>): receiver is GroupReceiver
   return 'type' in receiver && receiver.type === 'group';
 };
 
-export default function StatusBar({ receiverInfo }: StatusBarProps) {
+export default function StatusBar({ receiverInfo, onToggleVoice, isVoiceEnabled }: StatusBarProps) {
   const { RiveComponent: Avatar } = useRive({
     src: "/rive/cat_not_track_mouse.riv",
     stateMachines: "State Machine 1",
     autoplay: true,
   });
 
-  const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const toggleVoice = useCallback(() => {
-    setIsVoiceEnabled(prev => !prev);
-  }, []);
 
   const openModal = useCallback(() => {
     setIsModalOpen(true);
@@ -44,8 +40,8 @@ export default function StatusBar({ receiverInfo }: StatusBarProps) {
   }, []);
 
   const getDisplayName = useCallback((receiver: NonNullable<ReceiverInfo>) => {
-    if (isParticipant(receiver)) return receiver.username;
-    return receiver.name;
+    if ((receiver as UserInfo).username) return (receiver as UserInfo).username;
+    return (receiver as GroupReceiver | AssistantDto).name;
   }, []);
 
   const renderReceiverInfo = useCallback(() => {
@@ -59,20 +55,17 @@ export default function StatusBar({ receiverInfo }: StatusBarProps) {
           </p>
           {receiverInfo.description && (
             <p>
-              <strong>Description:</strong>{" "}
-              {receiverInfo.description}
+              <strong>Description:</strong> {receiverInfo.description}
             </p>
           )}
           {receiverInfo.createdAt && (
             <p>
-              <strong>Created At:</strong>{" "}
-              {new Date(receiverInfo.createdAt).toLocaleString()}
+              <strong>Created At:</strong> {new Date(receiverInfo.createdAt).toLocaleString()}
             </p>
           )}
           {receiverInfo.metadata && (
             <p>
-              <strong>Metadata:</strong>{" "}
-              {typeof receiverInfo.metadata === 'object'
+              <strong>Metadata:</strong> {typeof receiverInfo.metadata === 'object'
                 ? JSON.stringify(receiverInfo.metadata)
                 : String(receiverInfo.metadata)}
             </p>
@@ -88,8 +81,7 @@ export default function StatusBar({ receiverInfo }: StatusBarProps) {
             <strong>Type:</strong> Group
           </p>
           <p>
-            <strong>Members:</strong>{" "}
-            {receiverInfo.members.map(m => m.username).join(", ")}
+            <strong>Members:</strong> {receiverInfo.members.map(m => m.username).join(", ")}
           </p>
         </>
       );
@@ -123,7 +115,7 @@ export default function StatusBar({ receiverInfo }: StatusBarProps) {
         <div className={styles.avatar} onClick={openModal}>
           <Avatar />
         </div>
-        <div className={styles.voiceToggleIcon} onClick={toggleVoice}>
+        <div className={styles.voiceToggleIcon} onClick={onToggleVoice}>
           {isVoiceEnabled ? (
             <FaMicrophone className={styles.iconEnabled} />
           ) : (
@@ -138,10 +130,7 @@ export default function StatusBar({ receiverInfo }: StatusBarProps) {
 
       {isModalOpen && (
         <div className={styles.modal} onClick={closeModal}>
-          <div
-            className={styles.modalContent}
-            onClick={handleModalContentClick}
-          >
+          <div className={styles.modalContent} onClick={handleModalContentClick}>
             <div className={styles.largeAvatar}>
               <Avatar />
             </div>

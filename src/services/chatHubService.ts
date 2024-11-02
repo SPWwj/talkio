@@ -21,8 +21,11 @@ class ChatHubService {
   // Store event handlers
   private receiveMessageHandlers: Array<(message: Message) => void> = [];
   private roomMembersHandlers: Array<(members: UserInfo[]) => void> = [];
-  private userJoinedHandlers: Array<(userName: string, roomName: string) => void> = [];
-  private userLeftHandlers: Array<(userName: string, roomName: string) => void> = [];
+  private userJoinedHandlers: Array<(userInfo: UserInfo, roomName: string) => void> = [];
+  private userLeftHandlers: Array<(userInfo: UserInfo, roomName: string) => void> = [];
+  private receiveOfferHandlers: Array<(senderId: string, offer: RTCSessionDescriptionInit) => void> = [];
+  private receiveAnswerHandlers: Array<(senderId: string, answer: RTCSessionDescriptionInit) => void> = [];
+  private receiveIceCandidateHandlers: Array<(senderId: string, candidate: RTCIceCandidateInit) => void> = [];
 
   constructor(public readonly accessToken: string) { }
 
@@ -44,8 +47,6 @@ class ChatHubService {
           .configureLogging(LogLevel.Debug)
           .withAutomaticReconnect()
           .build();
-
-        // Register stored event handlers before starting the connection
 
         this.connection = connection;
 
@@ -72,28 +73,39 @@ class ChatHubService {
   }
 
   private registerEventHandlers(connection: HubConnection) {
-    this.receiveMessageHandlers.forEach((handler) => {
-      connection.on("ReceiveMessage", (message: Message) => {
-        console.log("Received message:", message);
-
-        handler(message);
-      });
+    // Message handlers
+    connection.on("ReceiveMessage", (message: Message) => {
+      console.log("Received message:", message);
+      this.receiveMessageHandlers.forEach((handler) => handler(message));
     });
 
-    this.roomMembersHandlers.forEach((handler) => {
-      connection.on("RoomMembers", (members: UserInfo[]) => {
-        console.log("Room members:", members); // Log the members to the console
-        handler(members);
-      });
+    connection.on("RoomMembers", (members: UserInfo[]) => {
+      console.log("Room members:", members);
+      this.roomMembersHandlers.forEach((handler) => handler(members));
     });
 
-
-    this.userJoinedHandlers.forEach((handler) => {
-      connection.on("UserJoined", handler);
+    connection.on("UserJoined", (userInfo: UserInfo, roomName: string) => {
+      this.userJoinedHandlers.forEach((handler) => handler(userInfo, roomName));
     });
 
-    this.userLeftHandlers.forEach((handler) => {
-      connection.on("UserLeft", handler);
+    connection.on("UserLeft", (userInfo: UserInfo, roomName: string) => {
+      this.userLeftHandlers.forEach((handler) => handler(userInfo, roomName));
+    });
+
+    // WebRTC signaling events
+    connection.on("ReceiveOffer", (senderId: string, offer: RTCSessionDescriptionInit) => {
+      console.log("Received WebRTC offer from:", senderId);
+      this.receiveOfferHandlers.forEach((handler) => handler(senderId, offer));
+    });
+
+    connection.on("ReceiveAnswer", (senderId: string, answer: RTCSessionDescriptionInit) => {
+      console.log("Received WebRTC answer from:", senderId);
+      this.receiveAnswerHandlers.forEach((handler) => handler(senderId, answer));
+    });
+
+    connection.on("ReceiveIceCandidate", (senderId: string, candidate: RTCIceCandidateInit) => {
+      console.log("Received ICE candidate from:", senderId);
+      this.receiveIceCandidateHandlers.forEach((handler) => handler(senderId, candidate));
     });
   }
 
@@ -139,7 +151,7 @@ class ChatHubService {
       id: crypto.randomUUID(),
       role: "user",
       sender: "nil",
-      senderId:"nil",
+      senderId: "nil",
       content: messageContent,
       datetime: new Date().toISOString(),
     };
@@ -154,65 +166,81 @@ class ChatHubService {
 
   public onReceiveMessage(callback: (message: Message) => void): void {
     this.receiveMessageHandlers.push(callback);
-    if (this.connection) {
-      this.connection.on("ReceiveMessage", (message: Message) => {
-        callback(message);
-      });
-    }
   }
-
 
   public offReceiveMessage(callback: (message: Message) => void): void {
     this.receiveMessageHandlers = this.receiveMessageHandlers.filter((h) => h !== callback);
-    if (this.connection) {
-      this.connection.off("ReceiveMessage", callback);
-    }
   }
 
   public onRoomMembers(callback: (members: UserInfo[]) => void): void {
     this.roomMembersHandlers.push(callback);
-    if (this.connection) {
-      this.connection.on("RoomMembers", (members: UserInfo[]) => {
-        console.log("Room members:", members);
-        callback(members);
-      });
-    }
   }
-
 
   public offRoomMembers(callback: (members: UserInfo[]) => void): void {
     this.roomMembersHandlers = this.roomMembersHandlers.filter((h) => h !== callback);
-    if (this.connection) {
-      this.connection.off("RoomMembers", callback);
-    }
   }
 
-  public onUserJoined(callback: (userName: string, roomName: string) => void): void {
+  public onUserJoined(callback: (userInfo: UserInfo, roomName: string) => void): void {
     this.userJoinedHandlers.push(callback);
-    if (this.connection) {
-      this.connection.on("UserJoined", callback);
-    }
   }
 
-  public offUserJoined(callback: (userName: string, roomName: string) => void): void {
+  public offUserJoined(callback: (userInfo: UserInfo, roomName: string) => void): void {
     this.userJoinedHandlers = this.userJoinedHandlers.filter((h) => h !== callback);
-    if (this.connection) {
-      this.connection.off("UserJoined", callback);
-    }
   }
 
-  public onUserLeft(callback: (userName: string, roomName: string) => void): void {
+
+  public onUserLeft(callback: (userInfo: UserInfo, roomName: string) => void): void {
     this.userLeftHandlers.push(callback);
-    if (this.connection) {
-      this.connection.on("UserLeft", callback);
-    }
   }
 
-  public offUserLeft(callback: (userName: string, roomName: string) => void): void {
+  public offUserLeft(callback: (userInfo: UserInfo, roomName: string) => void): void {
     this.userLeftHandlers = this.userLeftHandlers.filter((h) => h !== callback);
-    if (this.connection) {
-      this.connection.off("UserLeft", callback);
+  }
+
+
+  public async sendOffer(targetId: string, offer: RTCSessionDescriptionInit): Promise<void> {
+    if (!this.connection || this.connection.state !== HubConnectionState.Connected) {
+      throw new Error("Cannot send offer: connection is not in 'Connected' state.");
     }
+    await this.connection.invoke("SendOffer", targetId, offer);
+  }
+
+  public async sendAnswer(targetId: string, answer: RTCSessionDescriptionInit): Promise<void> {
+    if (!this.connection || this.connection.state !== HubConnectionState.Connected) {
+      throw new Error("Cannot send answer: connection is not in 'Connected' state.");
+    }
+    await this.connection.invoke("SendAnswer", targetId, answer);
+  }
+
+  public async sendIceCandidate(targetId: string, candidate: RTCIceCandidateInit): Promise<void> {
+    if (!this.connection || this.connection.state !== HubConnectionState.Connected) {
+      throw new Error("Cannot send ICE candidate: connection is not in 'Connected' state.");
+    }
+    await this.connection.invoke("SendIceCandidate", targetId, candidate);
+  }
+
+  public onReceiveOffer(callback: (senderId: string, offer: RTCSessionDescriptionInit) => void): void {
+    this.receiveOfferHandlers.push(callback);
+  }
+
+  public offReceiveOffer(callback: (senderId: string, offer: RTCSessionDescriptionInit) => void): void {
+    this.receiveOfferHandlers = this.receiveOfferHandlers.filter((h) => h !== callback);
+  }
+
+  public onReceiveAnswer(callback: (senderId: string, answer: RTCSessionDescriptionInit) => void): void {
+    this.receiveAnswerHandlers.push(callback);
+  }
+
+  public offReceiveAnswer(callback: (senderId: string, answer: RTCSessionDescriptionInit) => void): void {
+    this.receiveAnswerHandlers = this.receiveAnswerHandlers.filter((h) => h !== callback);
+  }
+
+  public onReceiveIceCandidate(callback: (senderId: string, candidate: RTCIceCandidateInit) => void): void {
+    this.receiveIceCandidateHandlers.push(callback);
+  }
+
+  public offReceiveIceCandidate(callback: (senderId: string, candidate: RTCIceCandidateInit) => void): void {
+    this.receiveIceCandidateHandlers = this.receiveIceCandidateHandlers.filter((h) => h !== callback);
   }
 }
 

@@ -1,3 +1,4 @@
+// ChatContainer.tsx
 import React, { useRef, useEffect } from 'react';
 import { useChatService } from '@/hooks/useChatService';
 import ChatUI from './ChatUI';
@@ -17,6 +18,9 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ roomId, token }) => {
         loading: isStreaming,
         loadData,
         myInfo,
+        toggleVoice,
+        isVoiceEnabled,
+        remoteStreams
     } = useChatService(token, { roomId, type: 'direct' });
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -35,6 +39,9 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ roomId, token }) => {
             onMessageChange={setNewMessage}
             onSendMessage={handleSend}
             messagesEndRef={messagesEndRef}
+            isVoiceEnabled={isVoiceEnabled}
+            onToggleVoice={toggleVoice}
+            remoteStreams={remoteStreams}
         />
     );
 };
