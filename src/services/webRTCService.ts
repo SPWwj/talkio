@@ -1,23 +1,16 @@
+// WebRTCService.ts
 import { MutableRefObject } from 'react';
+import { AudioAnalyzer, AudioAnalyzers, WebRTCDebugService } from './WebRTCDebugService';
 
 export class WebRTCService {
     private peerConnection: RTCPeerConnection | null = null;
     private iceCandidateQueue: RTCIceCandidateInit[] = [];
     private targetId: string | null = null;
     private isEnabled: boolean = false;
-
-    // Audio context and analyzers for both local and remote streams
-    private audioContext: AudioContext | null = null;
-    private localAudioAnalyser: AnalyserNode | null = null;
-    private remoteAudioAnalyser: AnalyserNode | null = null;
-    private localDataArray: Uint8Array | null = null;
-    private remoteDataArray: Uint8Array | null = null;
-    private localAnimationFrameId: number | null = null;
-    private remoteAnimationFrameId: number | null = null;
-
-    // Static debug flags
-    private static DEBUG_LOCAL_AUDIO = false;
-    private static DEBUG_REMOTE_AUDIO = true;
+    private analyzers: AudioAnalyzers = {
+        local: null,
+        remote: null
+    };
 
     constructor(
         private readonly chatService: any,
@@ -25,17 +18,6 @@ export class WebRTCService {
         private readonly onRemoteStream: (stream: MediaStream) => void,
         private readonly onAudioLevel?: (localLevel: number, remoteLevel: number) => void
     ) { }
-
-    // Static methods to control debugging
-    public static enableLocalAudioDebug(enable: boolean) {
-        WebRTCService.DEBUG_LOCAL_AUDIO = enable;
-        console.log(`Local audio debugging ${enable ? 'enabled' : 'disabled'}`);
-    }
-
-    public static enableRemoteAudioDebug(enable: boolean) {
-        WebRTCService.DEBUG_REMOTE_AUDIO = enable;
-        console.log(`Remote audio debugging ${enable ? 'enabled' : 'disabled'}`);
-    }
 
     async setupConnection() {
         if (this.peerConnection) return;
@@ -54,14 +36,17 @@ export class WebRTCService {
 
         this.peerConnection.ontrack = (event) => {
             console.log("Received remote track:", event);
-            try {
-                const [remoteStream] = event.streams;
-                this.setupRemoteAudioAnalyser(remoteStream);
-                this.onRemoteStream(remoteStream);
-            } catch (error) {
-                console.error("Error handling remote track:", error);
-            }
+            const [remoteStream] = event.streams;
+            this.setupRemoteAudioAnalyzer(remoteStream);
+
+            // Assign the remote stream to an audio element to ensure playback
+            const audioElement = new Audio();
+            audioElement.srcObject = remoteStream;
+            audioElement.play().catch(error => console.error("Audio playback error:", error));
+
+            this.onRemoteStream(remoteStream); // Keep this if needed for other operations
         };
+
     }
 
     private async getLocalStream(): Promise<MediaStream | null> {
@@ -71,8 +56,9 @@ export class WebRTCService {
             });
             console.log("Obtained local media stream:", localStream);
 
-            if (WebRTCService.DEBUG_LOCAL_AUDIO) {
-                this.setupLocalAudioAnalyser(localStream);
+            const debugStatus = WebRTCDebugService.getDebugStatus();
+            if (debugStatus.localAudioDebug) {
+                this.setupLocalAudioAnalyzer(localStream);
             }
 
             return localStream;
@@ -82,190 +68,113 @@ export class WebRTCService {
         }
     }
 
-    private setupLocalAudioAnalyser(stream: MediaStream) {
-        try {
-            if (!this.audioContext) {
-                this.audioContext = new AudioContext();
+    private createAudioAnalyzer(stream: MediaStream, type: 'local' | 'remote'): AudioAnalyzer {
+        const audioContext = new AudioContext();
+        const analyserNode = audioContext.createAnalyser();
+        analyserNode.fftSize = 256;
+        analyserNode.smoothingTimeConstant = 0.5;
+
+        const source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyserNode);
+
+        const bufferLength = analyserNode.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        console.log(`🎛️ ${type} audio analyzer setup complete:`, {
+            bufferLength,
+            sampleRate: audioContext.sampleRate,
+            fftSize: analyserNode.fftSize,
+            timeStamp: new Date().toISOString()
+        });
+
+        return {
+            audioContext,
+            analyserNode,
+            dataArray,
+            animationFrameId: null
+        };
+    }
+
+    private startAudioMonitoring(type: 'local' | 'remote') {
+        const analyzer = this.analyzers[type];
+        if (!analyzer) return;
+
+        const debugService = new WebRTCDebugService(
+            analyzer.audioContext,
+            analyzer.analyserNode,
+            analyzer.dataArray,
+            type
+        );
+
+        const analyzeFrame = () => {
+            const metrics = debugService.analyzeAudioFrame();
+
+            if (metrics && this.onAudioLevel) {
+                if (type === 'local') {
+                    const remoteLevel = this.getRemoteAudioLevel();
+                    this.onAudioLevel(metrics.level, remoteLevel);
+                }
             }
 
-            this.localAudioAnalyser = this.audioContext.createAnalyser();
-            this.localAudioAnalyser.fftSize = 256;
-            this.localAudioAnalyser.smoothingTimeConstant = 0.5;
+            analyzer.animationFrameId = requestAnimationFrame(analyzeFrame);
+        };
 
-            const source = this.audioContext.createMediaStreamSource(stream);
-            source.connect(this.localAudioAnalyser);
+        console.log(`🎙️ Starting ${type} audio monitoring...`);
+        analyzeFrame();
+    }
 
-            const bufferLength = this.localAudioAnalyser.frequencyBinCount;
-            this.localDataArray = new Uint8Array(bufferLength);
-
-            console.log('🎛️ Local audio analyzer setup complete:', {
-                bufferLength,
-                sampleRate: this.audioContext.sampleRate,
-                fftSize: this.localAudioAnalyser.fftSize,
-                timeStamp: new Date().toISOString()
-            });
-
-            this.startLocalAudioMonitoring();
+    private setupLocalAudioAnalyzer(stream: MediaStream) {
+        try {
+            this.analyzers.local = this.createAudioAnalyzer(stream, 'local');
+            this.startAudioMonitoring('local');
         } catch (error) {
             console.error('❌ Error setting up local audio analyser:', error);
         }
     }
 
-    private setupRemoteAudioAnalyser(stream: MediaStream) {
+    private setupRemoteAudioAnalyzer(stream: MediaStream) {
         try {
-            if (!this.audioContext) {
-                this.audioContext = new AudioContext();
-            }
-
-            this.remoteAudioAnalyser = this.audioContext.createAnalyser();
-            this.remoteAudioAnalyser.fftSize = 256;
-            this.remoteAudioAnalyser.smoothingTimeConstant = 0.5;
-
-            const source = this.audioContext.createMediaStreamSource(stream);
-            source.connect(this.remoteAudioAnalyser);
-
-            const bufferLength = this.remoteAudioAnalyser.frequencyBinCount;
-            this.remoteDataArray = new Uint8Array(bufferLength);
-
-            console.log('🎛️ Remote audio analyzer setup complete:', {
-                bufferLength,
-                sampleRate: this.audioContext.sampleRate,
-                fftSize: this.remoteAudioAnalyser.fftSize,
-                timeStamp: new Date().toISOString()
-            });
-
-            this.startRemoteAudioMonitoring();
+            this.analyzers.remote = this.createAudioAnalyzer(stream, 'remote');
+            this.startAudioMonitoring('remote');
         } catch (error) {
             console.error('❌ Error setting up remote audio analyser:', error);
         }
     }
 
-    private startLocalAudioMonitoring = () => {
-        let logCounter = 0;
-        const LOG_INTERVAL = 10;
-
-        const analyzeAudio = () => {
-            if (!this.localAudioAnalyser || !this.localDataArray) return;
-
-            this.localAudioAnalyser.getByteFrequencyData(this.localDataArray);
-
-            const average = this.localDataArray.reduce((acc, value) => acc + value, 0) / this.localDataArray.length;
-            const normalizedLevel = Math.min(100, (average / 256) * 100);
-
-            if (WebRTCService.DEBUG_LOCAL_AUDIO) {
-                logCounter++;
-                if (logCounter >= LOG_INTERVAL) {
-                    logCounter = 0;
-
-                    const peakIndex = this.localDataArray.indexOf(Math.max(...Array.from(this.localDataArray)));
-                    const peakFrequency = (peakIndex * this.audioContext!.sampleRate) / (this.localAudioAnalyser.frequencyBinCount * 2);
-
-                    console.log('🎤 Local Audio:', {
-                        level: normalizedLevel.toFixed(2) + '%',
-                        peak: Math.max(...Array.from(this.localDataArray)),
-                        average: average.toFixed(2),
-                        peakFrequency: peakFrequency.toFixed(2) + 'Hz',
-                        timestamp: new Date().toISOString(),
-                    });
-
-                    if (normalizedLevel > 5) {
-                        const bars = '█'.repeat(Math.floor(normalizedLevel / 5));
-                        console.log(`Local Volume: ${bars} ${normalizedLevel.toFixed(1)}%`);
-                    }
-                }
-            }
-
-            if (this.onAudioLevel) {
-                const remoteLevel = this.getRemoteAudioLevel();
-                this.onAudioLevel(normalizedLevel, remoteLevel);
-            }
-
-            this.localAnimationFrameId = requestAnimationFrame(analyzeAudio);
-        };
-
-        console.log('🎙️ Starting local audio monitoring...');
-        analyzeAudio();
-    }
-
-    private startRemoteAudioMonitoring = () => {
-        let logCounter = 0;
-        const LOG_INTERVAL = 10;
-
-        const analyzeAudio = () => {
-            if (!this.remoteAudioAnalyser || !this.remoteDataArray) return;
-
-            this.remoteAudioAnalyser.getByteFrequencyData(this.remoteDataArray);
-
-            const average = this.remoteDataArray.reduce((acc, value) => acc + value, 0) / this.remoteDataArray.length;
-            const normalizedLevel = Math.min(100, (average / 256) * 100);
-
-            if (WebRTCService.DEBUG_REMOTE_AUDIO) {
-                logCounter++;
-                if (logCounter >= LOG_INTERVAL) {
-                    logCounter = 0;
-
-                    const peakIndex = this.remoteDataArray.indexOf(Math.max(...Array.from(this.remoteDataArray)));
-                    const peakFrequency = (peakIndex * this.audioContext!.sampleRate) / (this.remoteAudioAnalyser.frequencyBinCount * 2);
-
-                    console.log('🎧 Remote Audio:', {
-                        level: normalizedLevel.toFixed(2) + '%',
-                        peak: Math.max(...Array.from(this.remoteDataArray)),
-                        average: average.toFixed(2),
-                        peakFrequency: peakFrequency.toFixed(2) + 'Hz',
-                        timestamp: new Date().toISOString(),
-                    });
-
-                    if (normalizedLevel > 5) {
-                        const bars = '█'.repeat(Math.floor(normalizedLevel / 5));
-                        console.log(`Remote Volume: ${bars} ${normalizedLevel.toFixed(1)}%`);
-                    }
-                }
-            }
-
-            this.remoteAnimationFrameId = requestAnimationFrame(analyzeAudio);
-        };
-
-        console.log('🎧 Starting remote audio monitoring...');
-        analyzeAudio();
-    }
-
     private getRemoteAudioLevel(): number {
-        if (!this.remoteAudioAnalyser || !this.remoteDataArray) return 0;
+        const analyzer = this.analyzers.remote;
+        if (!analyzer) return 0;
 
-        this.remoteAudioAnalyser.getByteFrequencyData(this.remoteDataArray);
-        const average = this.remoteDataArray.reduce((acc, value) => acc + value, 0) / this.remoteDataArray.length;
+        analyzer.analyserNode.getByteFrequencyData(analyzer.dataArray);
+        const average = analyzer.dataArray.reduce((acc, value) => acc + value, 0) /
+            analyzer.dataArray.length;
         return Math.min(100, (average / 256) * 100);
     }
 
     private stopAudioMonitoring() {
-        if (this.localAnimationFrameId !== null) {
-            cancelAnimationFrame(this.localAnimationFrameId);
-            this.localAnimationFrameId = null;
-            console.log('🛑 Local audio monitoring stopped');
-        }
+        Object.entries(this.analyzers).forEach(([type, analyzer]) => {
+            if (analyzer) {
+                if (analyzer.animationFrameId !== null) {
+                    cancelAnimationFrame(analyzer.animationFrameId);
+                    analyzer.animationFrameId = null;
+                    console.log(`🛑 ${type} audio monitoring stopped`);
+                }
 
-        if (this.remoteAnimationFrameId !== null) {
-            cancelAnimationFrame(this.remoteAnimationFrameId);
-            this.remoteAnimationFrameId = null;
-            console.log('🛑 Remote audio monitoring stopped');
-        }
+                analyzer.audioContext.close();
+            }
+        });
 
-        if (this.audioContext) {
-            this.audioContext.close();
-            this.audioContext = null;
-        }
-
-        this.localAudioAnalyser = null;
-        this.remoteAudioAnalyser = null;
-        this.localDataArray = null;
-        this.remoteDataArray = null;
+        this.analyzers = {
+            local: null,
+            remote: null
+        };
     }
 
     private processBufferedIceCandidates() {
         if (this.peerConnection && this.iceCandidateQueue.length > 0) {
             console.log(`Processing ${this.iceCandidateQueue.length} buffered ICE candidates`);
             this.iceCandidateQueue.forEach((candidate) => {
-                this.peerConnection!.addIceCandidate(new RTCIceCandidate(candidate))
+                this.peerConnection!.addIceCandidate(candidate)
                     .then(() => console.log("Successfully added buffered ICE candidate"))
                     .catch((error) => console.error("Error adding buffered ICE candidate:", error));
             });
@@ -284,6 +193,7 @@ export class WebRTCService {
         const localStream = await this.getLocalStream();
         if (!localStream) return;
 
+        // Attach each track to the peer connection (ensures audio is sent)
         localStream.getTracks().forEach((track) => {
             this.peerConnection!.addTrack(track, localStream);
         });
@@ -291,7 +201,7 @@ export class WebRTCService {
         const offer = await this.peerConnection.createOffer();
         await this.peerConnection.setLocalDescription(offer);
 
-        this.chatService.sendOffer(targetId, new RTCSessionDescription(offer));
+        this.chatService.sendOffer(targetId, offer);
         console.log("Offer sent successfully.");
     }
 
@@ -305,7 +215,9 @@ export class WebRTCService {
         this.targetId = senderId;
 
         await this.setupConnection();
-        await this.peerConnection!.setRemoteDescription(new RTCSessionDescription(offer));
+        await this.peerConnection!.setRemoteDescription(offer);
+
+        // Process buffered candidates after setting remote description
         this.processBufferedIceCandidates();
 
         const localStream = await this.getLocalStream();
@@ -321,9 +233,10 @@ export class WebRTCService {
         const answer = await this.peerConnection!.createAnswer();
         await this.peerConnection!.setLocalDescription(answer);
 
-        this.chatService.sendAnswer(senderId, new RTCSessionDescription(answer));
+        this.chatService.sendAnswer(senderId, answer);
         console.log("Created and sent answer.");
     }
+
 
     async handleIncomingAnswer(senderId: string, answer: RTCSessionDescriptionInit) {
         if (!this.isVoiceEnabledRef.current) {
@@ -332,7 +245,10 @@ export class WebRTCService {
         }
 
         console.log("Received answer from:", senderId);
-        await this.peerConnection!.setRemoteDescription(new RTCSessionDescription(answer));
+        await this.peerConnection!.setRemoteDescription(answer);
+        console.log("Remote description set with answer.");
+
+        // Ensure ICE candidates are processed after setting the remote description
         this.processBufferedIceCandidates();
     }
 
@@ -369,21 +285,12 @@ export class WebRTCService {
         this.isEnabled = false;
     }
 
-    // Methods to control debugging at runtime
+    // Static debug control methods now delegate to WebRTCDebugService
     public static setDebugFlags(localDebug: boolean, remoteDebug: boolean) {
-        WebRTCService.DEBUG_LOCAL_AUDIO = localDebug;
-        WebRTCService.DEBUG_REMOTE_AUDIO = remoteDebug;
-        console.log('Debug settings updated:', {
-            localAudio: localDebug,
-            remoteAudio: remoteDebug,
-            timestamp: new Date().toISOString()
-        });
+        WebRTCDebugService.setDebugFlags(localDebug, remoteDebug);
     }
 
     public static getDebugStatus() {
-        return {
-            localAudioDebug: WebRTCService.DEBUG_LOCAL_AUDIO,
-            remoteAudioDebug: WebRTCService.DEBUG_REMOTE_AUDIO
-        };
+        return WebRTCDebugService.getDebugStatus();
     }
 }
