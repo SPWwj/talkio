@@ -1,16 +1,16 @@
-// useChatService.ts
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import ChatHubService from "../services/chatHubService";
 import {
   Message,
-  Participant,
   RoomInfo,
   ReceiverInfo,
   GroupReceiver,
   IChat,
+  UserInfo,
 } from "@/types/message";
+import { decodeToken } from "@/utils/tokenHelper";
 
-export function useChatService(accessToken: string, room: RoomInfo): IChat {
+export function useChatService(accessToken: string, room: RoomInfo): IChat & { myInfo: UserInfo } {
   const chatServiceRef = useRef<ChatHubService>();
   if (!chatServiceRef.current) {
     chatServiceRef.current = new ChatHubService(accessToken);
@@ -18,10 +18,12 @@ export function useChatService(accessToken: string, room: RoomInfo): IChat {
   const chatService = chatServiceRef.current;
 
   const [messages, setMessages] = useState<Message[]>([]);
-  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [participants, setParticipants] = useState<UserInfo[]>([]);
   const [notifications, setNotifications] = useState<string[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState<boolean>(false);
+
+  const userInfo: UserInfo = useMemo(() => decodeToken(accessToken), [accessToken]);
 
   const initializeChatService = useCallback(async () => {
     if (!chatService) return;
@@ -44,7 +46,7 @@ export function useChatService(accessToken: string, room: RoomInfo): IChat {
       setMessages((prev) => [...prev, message]);
     };
 
-    const membersHandler = (members: Participant[]) => {
+    const membersHandler = (members: UserInfo[]) => {
       setParticipants(members);
     };
 
@@ -56,27 +58,22 @@ export function useChatService(accessToken: string, room: RoomInfo): IChat {
       setNotifications((prev) => [...prev, `${userName} left ${roomName}`]);
     };
 
-    // Register event handlers
     chatService.onReceiveMessage(messageHandler);
     chatService.onRoomMembers(membersHandler);
     chatService.onUserJoined(userJoinedHandler);
     chatService.onUserLeft(userLeftHandler);
 
-    // Initialize the connection
     initializeChatService();
 
     return () => {
-      // Clean up event handlers
       chatService.offReceiveMessage(messageHandler);
       chatService.offRoomMembers(membersHandler);
       chatService.offUserJoined(userJoinedHandler);
       chatService.offUserLeft(userLeftHandler);
       chatService.leaveRoom(room.roomId);
-      // Do not stop the connection here
     };
   }, [chatService, room.roomId]);
 
-  // Stop connection when component unmounts
   useEffect(() => {
     return () => {
       chatService.stopConnection();
@@ -92,7 +89,6 @@ export function useChatService(accessToken: string, room: RoomInfo): IChat {
     }
   }, [chatService, newMessage, room.roomId]);
 
-
   const derivedReceiverInfo: ReceiverInfo = useMemo(() => {
     if (room.type === "group") {
       return {
@@ -101,15 +97,17 @@ export function useChatService(accessToken: string, room: RoomInfo): IChat {
         type: "group",
         members: participants,
       } as GroupReceiver;
-    } else if (participants.length === 1) {
-      return {
-        id: participants[0].id,
-        username: participants[0].username,
-        type: "direct",
-      };
+    } else {
+      const otherParticipant = participants.find((p) => p.id !== userInfo.id);
+      return otherParticipant
+        ? {
+          id: otherParticipant.id,
+          username: otherParticipant.username,
+          type: "direct",
+        }
+        : null;
     }
-    return null;
-  }, [room, participants]);
+  }, [room, participants, userInfo]);
 
   return {
     messages,
@@ -119,15 +117,6 @@ export function useChatService(accessToken: string, room: RoomInfo): IChat {
     handleSend,
     loading,
     loadData: initializeChatService,
+    myInfo: userInfo, // Exporting myInfo here
   };
 }
-
-const generateUniqueId = (() => {
-  let counter = 0;
-  return () => {
-    const timestamp = Date.now();
-    const uniqueId = `${timestamp}-${counter}`;
-    counter = (counter + 1) % 1000;
-    return uniqueId;
-  };
-})();

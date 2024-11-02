@@ -1,6 +1,6 @@
-// ChatContainer.tsx
+// ChatAIContainer.tsx
 import React, { useRef } from 'react';
-import { useAIChat } from '@/hooks/useAIChat'; // Use the unified hook
+import { useAIChat } from '@/hooks/useAIChat';
 import ChatUI from './ChatUI';
 
 interface ChatContainerProps {
@@ -16,7 +16,8 @@ const ChatAIContainer: React.FC<ChatContainerProps> = ({ roomId, token }) => {
         handleSend,
         receiverInfo,
         loading: isLoading,
-    } = useAIChat(roomId, token);
+        myInfo,
+    } = useAIChat(roomId, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjA5ODc2NTQzMjEiLCJ1c2VybmFtZSI6IldoYWxlamF5IiwiaWF0IjoxNTE3Nzc3Nzc3fQ.H4N0qyv2gxBRRiNjbdBXyj6qDGshH8DfDRAh7vKNbkg");
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -26,6 +27,7 @@ const ChatAIContainer: React.FC<ChatContainerProps> = ({ roomId, token }) => {
             newMessage={newMessage}
             isLoading={isLoading}
             receiverInfo={receiverInfo}
+            userInfo={myInfo}
             onMessageChange={setNewMessage}
             onSendMessage={handleSend}
             messagesEndRef={messagesEndRef}

@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
-import { AssistantDto, IChat, Message, ReceiverInfo } from '@/types/message';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { AssistantDto, IChat, Message, ReceiverInfo, UserInfo } from '@/types/message';
 import { fetchAssistantInfo, fetchConversationHistory, fetchAssistantMessage } from '@/services/chatAIService';
+import { decodeToken } from "@/utils/tokenHelper";
 
 export const useAIChat = (roomId: string, token: string): IChat => {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -8,6 +9,8 @@ export const useAIChat = (roomId: string, token: string): IChat => {
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const abortControllerRef = useRef<AbortController | null>(null);
+
+    const myInfo: UserInfo = useMemo(() => decodeToken(token), [token]);
 
     const loadData = async () => {
         try {
@@ -20,10 +23,10 @@ export const useAIChat = (roomId: string, token: string): IChat => {
 
             const processedMessages = history.map((msg: Message) => ({
                 ...msg,
-                sender: msg.role === 'user' ? 'user' : info?.name || 'assistant',
+                sender: msg.role === 'user' ? myInfo.username : info?.name || 'assistant',
             }));
 
-            console.log(processedMessages)
+            console.log(processedMessages);
 
             setMessages(processedMessages);
         } catch (error) {
@@ -41,6 +44,7 @@ export const useAIChat = (roomId: string, token: string): IChat => {
         const newAssistantMessage: Message = {
             id: `${Date.now()}-receiver`,
             role: 'assistant',
+            senderId: 'nill',
             sender: (receiverInfo as AssistantDto).name,
             content: '',
             datetime: new Date().toLocaleString(),
@@ -90,7 +94,8 @@ export const useAIChat = (roomId: string, token: string): IChat => {
             const userMessage: Message = {
                 id: generateUniqueId(),
                 role: 'user',
-                sender: 'user',
+                sender: myInfo.username,
+                senderId: myInfo.id,
                 content: newMessage,
                 datetime: new Date().toLocaleString(),
             };
@@ -112,6 +117,7 @@ export const useAIChat = (roomId: string, token: string): IChat => {
         setNewMessage,
         handleSend,
         loadData,
+        myInfo, // Add myInfo here
     };
 };
 

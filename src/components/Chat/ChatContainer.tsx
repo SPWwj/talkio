@@ -16,6 +16,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ roomId, token }) => {
         receiverInfo,
         loading: isStreaming,
         loadData,
+        myInfo,
     } = useChatService(token, { roomId, type: 'direct' });
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -30,6 +31,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ roomId, token }) => {
             newMessage={newMessage}
             isLoading={isStreaming}
             receiverInfo={receiverInfo}
+            userInfo={myInfo}
             onMessageChange={setNewMessage}
             onSendMessage={handleSend}
             messagesEndRef={messagesEndRef}

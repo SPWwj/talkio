@@ -1,6 +1,6 @@
 // ChatUI.tsx
 import React, { useRef, useEffect } from 'react';
-import { Message } from '@/types/message';
+import { Message, UserInfo } from '@/types/message';
 import styles from '@/components/Chat/ChatUI.module.css';
 import InputField from '../UI/InputField';
 import SendButton from '../UI/SendButton';
@@ -12,6 +12,7 @@ interface ChatUIProps {
     newMessage: string;
     isLoading: boolean;
     receiverInfo: any;
+    userInfo: UserInfo;
     onMessageChange: (value: string) => void;
     onSendMessage: () => void;
     messagesEndRef: React.RefObject<HTMLDivElement>;
@@ -22,9 +23,10 @@ const ChatUI: React.FC<ChatUIProps> = ({
     newMessage,
     isLoading: isStreaming,
     receiverInfo: assistantInfo,
+    userInfo, // Destructure userInfo
     onMessageChange,
     onSendMessage,
-    messagesEndRef
+    messagesEndRef,
 }) => {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -35,7 +37,7 @@ const ChatUI: React.FC<ChatUIProps> = ({
             {assistantInfo && <StatusBar receiverInfo={assistantInfo} />}
             <div className={styles.messagesContainer}>
                 {messages.map((message: Message) => (
-                    <MessageBubble key={message.id} message={message} />
+                    <MessageBubble key={message.id} message={message} userInfo={userInfo} />
                 ))}
                 {isStreaming && (
                     <div className={styles.typingIndicator}>Assistant is typing...</div>

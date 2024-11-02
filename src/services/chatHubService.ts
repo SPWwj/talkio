@@ -1,10 +1,10 @@
 // chatHubService.ts
 import {
   Message,
-  Participant,
   JoinRoomRequestDto,
   LeaveRoomRequestDto,
   SendMessageRequestDto,
+  UserInfo,
 } from "@/types/message";
 import {
   HubConnection,
@@ -20,7 +20,7 @@ class ChatHubService {
 
   // Store event handlers
   private receiveMessageHandlers: Array<(message: Message) => void> = [];
-  private roomMembersHandlers: Array<(members: Participant[]) => void> = [];
+  private roomMembersHandlers: Array<(members: UserInfo[]) => void> = [];
   private userJoinedHandlers: Array<(userName: string, roomName: string) => void> = [];
   private userLeftHandlers: Array<(userName: string, roomName: string) => void> = [];
 
@@ -46,11 +46,12 @@ class ChatHubService {
           .build();
 
         // Register stored event handlers before starting the connection
-        this.registerEventHandlers(connection);
 
         this.connection = connection;
 
         await connection.start();
+        this.registerEventHandlers(connection);
+
         console.log("SignalR Connected");
 
         // Wait until the connection state is 'Connected'
@@ -73,15 +74,19 @@ class ChatHubService {
   private registerEventHandlers(connection: HubConnection) {
     this.receiveMessageHandlers.forEach((handler) => {
       connection.on("ReceiveMessage", (message: Message) => {
+        console.log("Received message:", message);
+
         handler(message);
       });
     });
 
     this.roomMembersHandlers.forEach((handler) => {
-      connection.on("RoomMembers", (members: Participant[]) => {
+      connection.on("RoomMembers", (members: UserInfo[]) => {
+        console.log("Room members:", members); // Log the members to the console
         handler(members);
       });
     });
+
 
     this.userJoinedHandlers.forEach((handler) => {
       connection.on("UserJoined", handler);
@@ -133,7 +138,8 @@ class ChatHubService {
     const messageDto: Message = {
       id: crypto.randomUUID(),
       role: "user",
-      sender: "currentUser", // Replace with actual user ID
+      sender: "nil",
+      senderId:"nil",
       content: messageContent,
       datetime: new Date().toISOString(),
     };
@@ -155,6 +161,7 @@ class ChatHubService {
     }
   }
 
+
   public offReceiveMessage(callback: (message: Message) => void): void {
     this.receiveMessageHandlers = this.receiveMessageHandlers.filter((h) => h !== callback);
     if (this.connection) {
@@ -162,16 +169,18 @@ class ChatHubService {
     }
   }
 
-  public onRoomMembers(callback: (members: Participant[]) => void): void {
+  public onRoomMembers(callback: (members: UserInfo[]) => void): void {
     this.roomMembersHandlers.push(callback);
     if (this.connection) {
-      this.connection.on("RoomMembers", (members: Participant[]) => {
+      this.connection.on("RoomMembers", (members: UserInfo[]) => {
+        console.log("Room members:", members);
         callback(members);
       });
     }
   }
 
-  public offRoomMembers(callback: (members: Participant[]) => void): void {
+
+  public offRoomMembers(callback: (members: UserInfo[]) => void): void {
     this.roomMembersHandlers = this.roomMembersHandlers.filter((h) => h !== callback);
     if (this.connection) {
       this.connection.off("RoomMembers", callback);

@@ -2,6 +2,7 @@ export interface Message {
     id: string;
     role: string;
     sender: string;
+    senderId: string;
     content: string;
     datetime: string;
 }
@@ -22,19 +23,20 @@ export interface IReceiveMessage {
     loading: boolean;
     startReceiving: (message: string) => void;
 }
-export interface Participant {
+export interface UserInfo {
     id: string;
     username: string;
 }
+
 
 export interface GroupReceiver {
     id: string;
     name: string;
     type: 'group';
-    members: Participant[];
+    members: UserInfo[];
 }
 
-export type ReceiverInfo = AssistantDto | Participant | GroupReceiver | null;
+export type ReceiverInfo = AssistantDto | UserInfo | GroupReceiver | null;
 export interface RoomInfo {
     roomId: string;
     type: 'group' | 'direct';
@@ -60,7 +62,8 @@ export interface IChat {
     newMessage: string;
     setNewMessage: React.Dispatch<React.SetStateAction<string>>;
     handleSend: () => void;
-    loadData: () => Promise<void>; // Load initial data for both chat types
+    loadData: () => Promise<void>;
+    myInfo: UserInfo;
 }
 
 export interface JoinRoomRequestDto {
