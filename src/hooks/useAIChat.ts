@@ -1,20 +1,20 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { AssistantDto, IChat, Message, ReceiverInfo, UserInfo } from '@/types/message';
 import { fetchAssistantInfo, fetchConversationHistory, fetchAssistantMessage } from '@/services/chatAIService';
 import { decodeToken } from "@/utils/tokenHelper";
 
 export const useAIChat = (roomId: string, token: string): IChat => {
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [receiverInfo, setReceiverInfo] = useState<ReceiverInfo | null>(null);
-    const [newMessage, setNewMessage] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [ messages, setMessages ] = useState<Message[]>([]);
+    const [ receiverInfo, setReceiverInfo ] = useState<ReceiverInfo | null>(null);
+    const [ newMessage, setNewMessage ] = useState('');
+    const [ loading, setLoading ] = useState(false);
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    const myInfo: UserInfo = useMemo(() => decodeToken(token), [token]);
+    const myInfo: UserInfo = useMemo(() => decodeToken(token), [ token ]);
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
-            const [info, history] = await Promise.all([
+            const [ info, history ] = await Promise.all([
                 fetchAssistantInfo(new AbortController().signal),
                 fetchConversationHistory(new AbortController().signal)
             ]);
@@ -32,7 +32,7 @@ export const useAIChat = (roomId: string, token: string): IChat => {
         } catch (error) {
             console.error('Failed to fetch initial data:', error);
         }
-    };
+    }, [ myInfo.username ]);
 
     const startReceiving = async (userMessage: string) => {
         if (!receiverInfo) return;
@@ -50,7 +50,7 @@ export const useAIChat = (roomId: string, token: string): IChat => {
             datetime: new Date().toLocaleString(),
         };
 
-        setMessages((prev) => [...prev, newAssistantMessage]);
+        setMessages((prev) => [ ...prev, newAssistantMessage ]);
 
         try {
             const response = await fetchAssistantMessage(userMessage, abortControllerRef.current.signal);
@@ -99,7 +99,7 @@ export const useAIChat = (roomId: string, token: string): IChat => {
                 content: newMessage,
                 datetime: new Date().toLocaleString(),
             };
-            setMessages((prev) => [...prev, userMessage]);
+            setMessages((prev) => [ ...prev, userMessage ]);
             startReceiving(newMessage);
             setNewMessage('');
         }
@@ -107,7 +107,7 @@ export const useAIChat = (roomId: string, token: string): IChat => {
 
     useEffect(() => {
         loadData();
-    }, [loadData]);
+    }, [ loadData ]);
 
     return {
         messages,
