@@ -107,7 +107,7 @@ export const useAIChat = (roomId: string, token: string): IChat => {
 
     useEffect(() => {
         loadData();
-    }, []);
+    }, [loadData]);
 
     return {
         messages,
@@ -117,7 +117,7 @@ export const useAIChat = (roomId: string, token: string): IChat => {
         setNewMessage,
         handleSend,
         loadData,
-        myInfo, // Add myInfo here
+        myInfo,
     };
 };
 
