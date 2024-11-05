@@ -28,7 +28,7 @@ export function useChatService(
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState<boolean>(false);
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
-  const setLocalAudioLevel = useState(0)[ 1 ];
+  const setLocalAudioLevel = useState(0)[1];
 
   const isVoiceEnabledRef = useRef(isVoiceEnabled);
   useEffect(() => {
@@ -42,9 +42,7 @@ export function useChatService(
       isVoiceEnabledRef,
       (stream: MediaStream) => {
         setRemoteStreams((prevStreams) => {
-          const streamExists = prevStreams.some(
-            (s) => s.id === stream.id
-          );
+          const streamExists = prevStreams.some((s) => s.id === stream.id);
           if (!streamExists) {
             return [...prevStreams, stream];
           }
@@ -101,7 +99,7 @@ export function useChatService(
     handleAnswer: (senderId: string, answer: RTCSessionDescriptionInit) =>
       webRTCServiceRef.current?.handleIncomingAnswer(senderId, answer),
     handleIceCandidate: (senderId: string, candidate: RTCIceCandidateInit) =>
-      webRTCServiceRef.current?.handleIncomingCandidate(senderId, candidate)
+      webRTCServiceRef.current?.handleIncomingCandidate(senderId, candidate),
   });
 
   const toggleVoice = useCallback(async () => {
@@ -113,7 +111,7 @@ export function useChatService(
       console.log("Enabling voice chat...");
       setIsVoiceEnabled(true);
 
-      if (derivedReceiverInfo && 'id' in derivedReceiverInfo) {
+      if (derivedReceiverInfo && "id" in derivedReceiverInfo) {
         const targetId = derivedReceiverInfo.id;
         await webRTCServiceRef.current?.setupConnection();
         await webRTCServiceRef.current?.createAndSendOffer(targetId);
@@ -152,10 +150,16 @@ export function useChatService(
       setParticipants((prev) => prev.filter((user) => user.id !== userInfo.id));
     };
 
+    const messageHistoryHandler = (history: Message[]) => {
+      console.log("Received message history:", history);
+      setMessages(history);
+    };
+
     chatService.onReceiveMessage(messageHandler);
     chatService.onRoomMembers(membersHandler);
     chatService.onUserJoined(userJoinedHandler);
     chatService.onUserLeft(userLeftHandler);
+    chatService.onMessageHistory(messageHistoryHandler);
 
     chatService.onReceiveOffer(webRTCHandlersRef.current.handleOffer);
     chatService.onReceiveAnswer(webRTCHandlersRef.current.handleAnswer);
@@ -168,10 +172,11 @@ export function useChatService(
       chatService.offRoomMembers(membersHandler);
       chatService.offUserJoined(userJoinedHandler);
       chatService.offUserLeft(userLeftHandler);
+      chatService.offMessageHistory(messageHistoryHandler);
 
-      chatService.offReceiveOffer(webRTCHandlersRef!.current.handleOffer);
-      chatService.offReceiveAnswer(webRTCHandlersRef!.current.handleAnswer);
-      chatService.offReceiveIceCandidate(webRTCHandlersRef!.current.handleIceCandidate);
+      chatService.offReceiveOffer(webRTCHandlersRef.current.handleOffer);
+      chatService.offReceiveAnswer(webRTCHandlersRef.current.handleAnswer);
+      chatService.offReceiveIceCandidate(webRTCHandlersRef.current.handleIceCandidate);
 
       chatService.leaveRoom(room.roomId);
       webRTCServiceRef.current?.cleanup();

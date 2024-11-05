@@ -27,6 +27,7 @@ class ChatHubService implements ChatService {
   private receiveOfferHandlers: Array<(senderId: string, offer: RTCSessionDescriptionInit) => void> = [];
   private receiveAnswerHandlers: Array<(senderId: string, answer: RTCSessionDescriptionInit) => void> = [];
   private receiveIceCandidateHandlers: Array<(senderId: string, candidate: RTCIceCandidateInit) => void> = [];
+  private messageHistoryHandlers: Array<(messages: Message[]) => void> = [];
 
   constructor(public readonly accessToken: string) { }
 
@@ -42,7 +43,7 @@ class ChatHubService implements ChatService {
     this.connectionEstablishedPromise = new Promise<void>(async (resolve, reject) => {
       try {
         const connection = new HubConnectionBuilder()
-          .withUrl("http://localhost:5186/hubs/chat", {
+          .withUrl("https://chatiox.azurewebsites.net/hubs/chat", {
             accessTokenFactory: async () => this.accessToken,
           })
           .configureLogging(LogLevel.Debug)
@@ -107,6 +108,10 @@ class ChatHubService implements ChatService {
     connection.on("ReceiveIceCandidate", (senderId: string, candidate: RTCIceCandidateInit) => {
       console.log("Received ICE candidate from:", senderId);
       this.receiveIceCandidateHandlers.forEach((handler) => handler(senderId, candidate));
+    });
+    connection.on("MessageHistory", (messages: Message[]) => {
+      console.log("Received message history:", messages);
+      this.messageHistoryHandlers.forEach((handler) => handler(messages));
     });
   }
 
@@ -206,6 +211,14 @@ class ChatHubService implements ChatService {
     await this.connection.invoke("SendOffer", targetId, offer);
   }
 
+  public onMessageHistory(callback: (messages: Message[]) => void): void {
+    this.messageHistoryHandlers.push(callback);
+  }
+
+  public offMessageHistory(callback: (messages: Message[]) => void): void {
+    this.messageHistoryHandlers = this.messageHistoryHandlers.filter((h) => h !== callback);
+  }
+  
   public async sendAnswer(targetId: string, answer: RTCSessionDescriptionInit): Promise<void> {
     if (!this.connection || this.connection.state !== HubConnectionState.Connected) {
       throw new Error("Cannot send answer: connection is not in 'Connected' state.");
