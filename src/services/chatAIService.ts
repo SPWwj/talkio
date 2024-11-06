@@ -2,7 +2,9 @@ import { AssistantDto, Message } from "@/types/message";
 
 ;
 
-const API_BASE_URL = 'https://chatiox.azurewebsites.net/api/assistant';
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/assistant`;
+
+console.log("API Base URL:", API_BASE_URL);
 
 export const fetchAssistantMessage = async (userMessage: string, signal: AbortSignal) => {
     try {

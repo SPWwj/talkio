@@ -42,8 +42,11 @@ class ChatHubService implements ChatService {
 
     this.connectionEstablishedPromise = new Promise<void>(async (resolve, reject) => {
       try {
+        const connectionUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/hubs/chat`;
+        console.log("SignalR Connection URL:", connectionUrl);
+
         const connection = new HubConnectionBuilder()
-          .withUrl("https://chatiox.azurewebsites.net/hubs/chat", {
+          .withUrl(connectionUrl, {
             accessTokenFactory: async () => this.accessToken,
           })
           .configureLogging(LogLevel.Debug)
@@ -70,6 +73,7 @@ class ChatHubService implements ChatService {
         this.isConnecting = false;
       }
     });
+
 
     return this.connectionEstablishedPromise;
   }

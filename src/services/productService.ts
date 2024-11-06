@@ -1,6 +1,8 @@
 import { ProductModel } from "@/types/productModel";
 
-const API_BASE_URL = 'https://chatiox.azurewebsites.net/api';
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api`;
+
+console.log("API Base URL:", API_BASE_URL);
 
 export class ProductService {
     async getProductById(id: string): Promise<ProductModel> {
