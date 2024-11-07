@@ -1,5 +1,5 @@
-import {Message, UserInfo} from "@/types/message";
-import {formatTime} from "@/utils/dateTime";
+import { Message, UserInfo } from "@/types/message";
+import { formatTime } from "@/utils/dateTime";
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -10,8 +10,10 @@ interface MessageBubbleProps {
 	userInfo: UserInfo;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({message, userInfo}) => {
-	const isUser = message.senderId === userInfo.id || message.role === "user";
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message, userInfo }) => {
+	const isUser =
+		message.senderId === userInfo.id ||
+		(message.type === "ai" && message.role === "user");
 
 	return (
 		<div

@@ -4,6 +4,7 @@ export interface Message {
     sender: string;
     senderId: string;
     content: string;
+    type?: string;
     datetime: string;
 }
 export interface IInitialize {
