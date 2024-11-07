@@ -156,9 +156,8 @@ class ChatHubService implements ChatService {
     if (this.connection.state !== HubConnectionState.Connected) {
       throw new Error("Cannot send message: connection is not in 'Connected' state.");
     }
-
     const messageDto: Message = {
-      id: crypto.randomUUID(),
+      id: "_",
       role: "user",
       sender: "nil",
       senderId: "nil",
@@ -222,7 +221,7 @@ class ChatHubService implements ChatService {
   public offMessageHistory(callback: (messages: Message[]) => void): void {
     this.messageHistoryHandlers = this.messageHistoryHandlers.filter((h) => h !== callback);
   }
-  
+
   public async sendAnswer(targetId: string, answer: RTCSessionDescriptionInit): Promise<void> {
     if (!this.connection || this.connection.state !== HubConnectionState.Connected) {
       throw new Error("Cannot send answer: connection is not in 'Connected' state.");
