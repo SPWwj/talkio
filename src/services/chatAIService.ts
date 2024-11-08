@@ -12,6 +12,7 @@ export const fetchAssistantMessage = async (userMessage: string, signal: AbortSi
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': 'https://talkio-azha.vercel.app',
             },
             body: JSON.stringify({ message: userMessage }),
             signal: signal,
