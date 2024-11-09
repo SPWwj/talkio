@@ -1,16 +1,16 @@
-import { Message, UserInfo } from "@/types/message";
-import { formatTime } from "@/utils/dateTime";
+import {Message, UserInfo} from "@/types/message";
+import {formatTime} from "@/utils/dateTime";
 import React from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+
 import styles from "@/components/Chat/MessageBubble.module.css";
+import MarkdownRenderer from "./MarkdownRenderer";
 
 interface MessageBubbleProps {
 	message: Message;
 	userInfo: UserInfo;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message, userInfo }) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({message, userInfo}) => {
 	const isUser =
 		message.senderId === userInfo.id ||
 		(message.type === "ai" && message.role === "user");
@@ -23,9 +23,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, userInfo }) => {
 		>
 			{!isUser && <div className={styles.senderName}>{message.sender}</div>}
 			<div className={styles.messageContent}>
-				<ReactMarkdown remarkPlugins={[remarkGfm]}>
-					{message.content}
-				</ReactMarkdown>
+				<MarkdownRenderer content={message.content} />
 			</div>
 			<div className={styles.messageTimestamp}>
 				{formatTime(message.datetime)}
