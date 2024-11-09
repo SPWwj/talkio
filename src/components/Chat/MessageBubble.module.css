@@ -38,6 +38,8 @@
 /* Message content */
 .messageContent {
     font-size: 16px;
+    padding-left: 5px;
+    padding-right: 5px;
 }
 
 /* Timestamp of the message */
