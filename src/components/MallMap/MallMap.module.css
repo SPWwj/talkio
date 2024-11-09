@@ -357,7 +357,7 @@
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  max-height: 480px; /* Approximately 2 rows of cards */
+  max-height: 250px; /* Approximately 2 rows of cards */
   overflow-y: auto;
   padding-right: 0.5rem;
   -webkit-overflow-scrolling: touch;
