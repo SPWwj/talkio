@@ -1,4 +1,4 @@
-import React, {useRef, useCallback, useState} from "react";
+import React, {useRef, useCallback, useState, useEffect} from "react";
 import styles from "@/components/UI/InputField.module.css";
 
 interface InputFieldProps {
@@ -16,31 +16,50 @@ const InputField: React.FC<InputFieldProps> = ({
 }) => {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [localValue, setLocalValue] = useState(propValue);
+	const pendingUpdateRef = useRef<string | null>(null);
 	const updateTimeoutRef = useRef<NodeJS.Timeout>();
 
-	// Handle local state updates immediately for responsive typing
-	const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-		const newValue = event.target.value;
-		setLocalValue(newValue); // Update local state immediately
-
-		// Throttle the parent state update
-		if (updateTimeoutRef.current) {
-			clearTimeout(updateTimeoutRef.current);
+	// Synchronize local state with prop value
+	useEffect(() => {
+		if (propValue !== localValue && pendingUpdateRef.current !== localValue) {
+			setLocalValue(propValue);
 		}
+	}, [propValue, localValue]);
 
-		updateTimeoutRef.current = setTimeout(() => {
-			onChange(newValue); // Update parent state after delay
+	const flushPendingUpdate = useCallback(() => {
+		if (pendingUpdateRef.current !== null) {
+			onChange(pendingUpdateRef.current);
+			pendingUpdateRef.current = null;
+		}
+	}, [onChange]);
 
-			// Adjust height after state update
-			if (textareaRef.current) {
-				textareaRef.current.style.height = "auto";
-				textareaRef.current.style.height = `${Math.min(
-					textareaRef.current.scrollHeight,
-					200
-				)}px`;
+	const handleChange = useCallback(
+		(event: React.ChangeEvent<HTMLTextAreaElement>) => {
+			const newValue = event.target.value;
+			setLocalValue(newValue);
+			pendingUpdateRef.current = newValue;
+
+			// Clear existing timeout
+			if (updateTimeoutRef.current) {
+				clearTimeout(updateTimeoutRef.current);
 			}
-		}, 300); // Approximately 1 frame at 60fps
-	};
+
+			// Set new timeout for parent state update
+			updateTimeoutRef.current = setTimeout(() => {
+				flushPendingUpdate();
+
+				// Adjust height after state update
+				if (textareaRef.current) {
+					textareaRef.current.style.height = "auto";
+					textareaRef.current.style.height = `${Math.min(
+						textareaRef.current.scrollHeight,
+						200
+					)}px`;
+				}
+			}, 100);
+		},
+		[flushPendingUpdate]
+	);
 
 	const handleKeyDown = useCallback(
 		(event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -50,34 +69,39 @@ const InputField: React.FC<InputFieldProps> = ({
 				localValue.trim() !== ""
 			) {
 				event.preventDefault();
-				onSend();
+
+				// Flush any pending updates before sending
+				flushPendingUpdate();
+
+				// Small delay to ensure state is updated
+				setTimeout(() => {
+					onSend();
+				}, 0);
+
 				if (textareaRef.current) {
 					textareaRef.current.focus();
 				}
 			}
 		},
-		[localValue, onSend]
+		[localValue, onSend, flushPendingUpdate]
 	);
 
-	// Sync local state with prop value when it changes externally
-	React.useEffect(() => {
-		setLocalValue(propValue);
-	}, [propValue]);
-
-	// Cleanup timeout on unmount
-	React.useEffect(() => {
+	// Cleanup on unmount
+	useEffect(() => {
 		return () => {
 			if (updateTimeoutRef.current) {
 				clearTimeout(updateTimeoutRef.current);
 			}
+			// Flush any pending updates
+			flushPendingUpdate();
 		};
-	}, []);
+	}, [flushPendingUpdate]);
 
 	return (
 		<textarea
 			ref={textareaRef}
 			className={styles.messageInput}
-			value={localValue} // Use local state for immediate updates
+			value={localValue}
 			onChange={handleChange}
 			onKeyDown={handleKeyDown}
 			placeholder="Type a message..."

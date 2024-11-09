@@ -1,4 +1,4 @@
-import React, {useRef, useEffect, useState} from "react";
+import React, {useRef, useEffect, useState, useCallback} from "react";
 import {Message, ReceiverInfo, UserInfo} from "@/types/message";
 import styles from "@/components/Chat/ChatUI.module.css";
 import InputField from "../UI/InputField";
@@ -39,9 +39,9 @@ const ChatUI: React.FC<ChatUIProps> = ({
 
 	const [audioStarted, setAudioStarted] = useState(false);
 
-	const startAudio = () => {
+	const startAudio = useCallback(() => {
 		setAudioStarted(true);
-	};
+	}, []);
 
 	const audioRefs = useRef<{[key: string]: HTMLAudioElement | null}>({});
 
@@ -55,6 +55,18 @@ const ChatUI: React.FC<ChatUIProps> = ({
 			}
 		});
 	}, [remoteStreams, audioStarted]);
+
+	// Memoized functions to prevent re-renders
+	const handleMessageChange = useCallback(
+		(value: string) => {
+			onMessageChange(value);
+		},
+		[onMessageChange]
+	);
+
+	const handleSendMessage = useCallback(() => {
+		onSendMessage();
+	}, [onSendMessage]);
 
 	return (
 		<div className={styles.chatContainer}>
@@ -81,11 +93,11 @@ const ChatUI: React.FC<ChatUIProps> = ({
 			<div className={styles.inputContainer}>
 				<InputField
 					value={newMessage}
-					onChange={onMessageChange}
-					onSend={onSendMessage}
+					onChange={handleMessageChange}
+					onSend={handleSendMessage}
 					disabled={isStreaming}
 				/>
-				<SendButton onClick={onSendMessage} disabled={isStreaming} />
+				<SendButton onClick={handleSendMessage} disabled={isStreaming} />
 			</div>
 			{!audioStarted && remoteStreams && remoteStreams.length > 0 && (
 				<button onClick={startAudio} className={styles.startAudioButton}>
@@ -109,4 +121,4 @@ const ChatUI: React.FC<ChatUIProps> = ({
 	);
 };
 
-export default ChatUI;
+export default React.memo(ChatUI);

@@ -174,9 +174,9 @@ export function useChatService(
       chatService.offUserLeft(userLeftHandler);
       chatService.offMessageHistory(messageHistoryHandler);
 
-      chatService.offReceiveOffer(webRTCHandlersRef.current.handleOffer);
-      chatService.offReceiveAnswer(webRTCHandlersRef.current.handleAnswer);
-      chatService.offReceiveIceCandidate(webRTCHandlersRef.current.handleIceCandidate);
+      chatService.offReceiveOffer(webRTCHandlersRef!.current.handleOffer);
+      chatService.offReceiveAnswer(webRTCHandlersRef!.current.handleAnswer);
+      chatService.offReceiveIceCandidate(webRTCHandlersRef!.current.handleIceCandidate);
 
       chatService.leaveRoom(room.roomId);
       webRTCServiceRef.current?.cleanup();
