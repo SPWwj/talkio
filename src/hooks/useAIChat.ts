@@ -9,6 +9,7 @@ export const useAIChat = (roomId: string, token: string): IChat => {
     const [ newMessage, setNewMessage ] = useState('');
     const [ loading, setLoading ] = useState(false);
     const abortControllerRef = useRef<AbortController | null>(null);
+    const messageUpdateTimeoutRef = useRef<NodeJS.Timeout>();
 
     const myInfo: UserInfo = useMemo(() => decodeToken(token), [ token ]);
 
@@ -26,15 +27,28 @@ export const useAIChat = (roomId: string, token: string): IChat => {
                 sender: msg.role === 'user' ? myInfo.username : info?.name || 'assistant',
             }));
 
-            console.log(processedMessages);
-
             setMessages(processedMessages);
         } catch (error) {
             console.error('Failed to fetch initial data:', error);
         }
     }, [ myInfo.username ]);
 
-    const startReceiving = async (userMessage: string) => {
+    const updateReceiverMessage = useCallback((messageId: string, content: string) => {
+        // Debounce message updates
+        if (messageUpdateTimeoutRef.current) {
+            clearTimeout(messageUpdateTimeoutRef.current);
+        }
+
+        messageUpdateTimeoutRef.current = setTimeout(() => {
+            setMessages(prevMessages =>
+                prevMessages.map(msg =>
+                    msg.id === messageId ? { ...msg, content } : msg
+                )
+            );
+        }, 50); // Adjust this delay as needed
+    }, []);
+
+    const startReceiving = useCallback(async (userMessage: string) => {
         if (!receiverInfo) return;
 
         setLoading(true);
@@ -50,7 +64,7 @@ export const useAIChat = (roomId: string, token: string): IChat => {
             datetime: new Date().toLocaleString(),
         };
 
-        setMessages((prev) => [ ...prev, newAssistantMessage ]);
+        setMessages(prev => [ ...prev, newAssistantMessage ]);
 
         try {
             const response = await fetchAssistantMessage(userMessage, abortControllerRef.current.signal);
@@ -73,8 +87,6 @@ export const useAIChat = (roomId: string, token: string): IChat => {
                         }
                     }
                 }
-            } else {
-                console.error('Invalid response or response body missing');
             }
         } catch (error) {
             if (error instanceof Error && error.name !== 'AbortError') {
@@ -83,13 +95,9 @@ export const useAIChat = (roomId: string, token: string): IChat => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [ receiverInfo, updateReceiverMessage ]);
 
-    const updateReceiverMessage = (messageId: string, content: string) => {
-        setMessages((prevMessages) => prevMessages.map((msg) => (msg.id === messageId ? { ...msg, content: content } : msg)));
-    };
-
-    const handleSend = () => {
+    const handleSend = useCallback(() => {
         if (newMessage.trim()) {
             const userMessage: Message = {
                 id: generateUniqueId(),
@@ -99,14 +107,20 @@ export const useAIChat = (roomId: string, token: string): IChat => {
                 content: newMessage,
                 datetime: new Date().toLocaleString(),
             };
-            setMessages((prev) => [ ...prev, userMessage ]);
+            setMessages(prev => [ ...prev, userMessage ]);
             startReceiving(newMessage);
             setNewMessage('');
         }
-    };
+    }, [ newMessage, myInfo.username, myInfo.id, startReceiving ]);
 
     useEffect(() => {
         loadData();
+
+        return () => {
+            if (messageUpdateTimeoutRef.current) {
+                clearTimeout(messageUpdateTimeoutRef.current);
+            }
+        };
     }, [ loadData ]);
 
     return {

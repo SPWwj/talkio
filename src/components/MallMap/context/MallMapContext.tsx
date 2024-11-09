@@ -1,5 +1,4 @@
 import React, {createContext, useState, useEffect} from "react";
-
 import {stores} from "../data/stores";
 import {
 	MallMapContextType,
@@ -22,11 +21,17 @@ export const MallMapProvider: React.FC<MallMapProviderProps> = ({
 	);
 	const [filter, setFilter] = useState<DirectoryCategory | "all">("all");
 
+	console.log("Start Location:", startLocation);
+	console.log("End Location:", endLocation);
+
 	const startStore =
 		stores.find((s) => s.location === startLocation) || stores[0];
 
 	useEffect(() => {
+		console.log("Search for end location: " + endLocation);
 		const endStore = stores.find((s) => s.location === endLocation);
+		console.log("location found: " + endStore);
+
 		if (endStore) {
 			setSelectedStore(endStore);
 		}
