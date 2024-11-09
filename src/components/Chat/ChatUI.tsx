@@ -33,17 +33,34 @@ const ChatUI: React.FC<ChatUIProps> = ({
 	messagesEndRef,
 	remoteStreams,
 }) => {
-	useEffect(() => {
-		messagesEndRef.current?.scrollIntoView({behavior: "smooth"});
-	}, [messages, messagesEndRef]);
-
 	const [audioStarted, setAudioStarted] = useState(false);
+	const audioRefs = useRef<{[key: string]: HTMLAudioElement | null}>({});
+	const chatContainerRef = useRef<HTMLDivElement>(null);
 
 	const startAudio = useCallback(() => {
 		setAudioStarted(true);
 	}, []);
 
-	const audioRefs = useRef<{[key: string]: HTMLAudioElement | null}>({});
+	// Automatically scroll to the bottom when messages are updated
+	useEffect(() => {
+		messagesEndRef.current?.scrollIntoView({behavior: "smooth"});
+	}, [messages, messagesEndRef, isStreaming, newMessage]);
+
+	// Observe changes in chat container to scroll when dynamic content renders
+	useEffect(() => {
+		if (!chatContainerRef.current) return;
+
+		const observer = new MutationObserver(() => {
+			messagesEndRef.current?.scrollIntoView({behavior: "smooth"});
+		});
+
+		observer.observe(chatContainerRef.current, {
+			childList: true,
+			subtree: true,
+		});
+
+		return () => observer.disconnect();
+	}, [messagesEndRef]);
 
 	useEffect(() => {
 		if (!remoteStreams || !audioStarted) return;
@@ -56,7 +73,6 @@ const ChatUI: React.FC<ChatUIProps> = ({
 		});
 	}, [remoteStreams, audioStarted]);
 
-	// Memoized functions to prevent re-renders
 	const handleMessageChange = useCallback(
 		(value: string) => {
 			onMessageChange(value);
@@ -77,7 +93,7 @@ const ChatUI: React.FC<ChatUIProps> = ({
 					onToggleVoice={onToggleVoice}
 				/>
 			)}
-			<div className={styles.messagesContainer}>
+			<div className={styles.messagesContainer} ref={chatContainerRef}>
 				{messages.map((message: Message) => (
 					<MessageBubble
 						key={message.id}
