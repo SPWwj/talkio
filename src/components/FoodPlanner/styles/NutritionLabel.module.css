@@ -1,0 +1,24 @@
+/* NutritionLabel.module.css */
+.nutritionContainer {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.nutritionTitle {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.nutritionGrid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.nutritionRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #495057;
+}
