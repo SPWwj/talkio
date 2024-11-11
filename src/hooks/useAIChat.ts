@@ -14,18 +14,18 @@ import {
 import { decodeToken } from "@/utils/tokenHelper";
 
 export const useAIChat = (roomId: string, token: string): IChat => {
-    const [ messages, setMessages ] = useState<Message[]>([]);
-    const [ receiverInfo, setReceiverInfo ] = useState<ReceiverInfo | null>(null);
-    const [ newMessage, setNewMessage ] = useState("");
-    const [ loading, setLoading ] = useState(false);
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [receiverInfo, setReceiverInfo] = useState<ReceiverInfo | null>(null);
+    const [newMessage, setNewMessage] = useState("");
+    const [loading, setLoading] = useState(false);
     const abortControllerRef = useRef<AbortController | null>(null);
     const messageUpdateTimeoutRef = useRef<NodeJS.Timeout>();
 
-    const myInfo: UserInfo = useMemo(() => decodeToken(token), [ token ]);
+    const myInfo: UserInfo = useMemo(() => decodeToken(token), [token]);
 
     const loadData = useCallback(async () => {
         try {
-            const [ info, history ] = await Promise.all([
+            const [info, history] = await Promise.all([
                 fetchAssistantInfo(new AbortController().signal),
                 fetchConversationHistory(new AbortController().signal),
             ]);
@@ -42,7 +42,7 @@ export const useAIChat = (roomId: string, token: string): IChat => {
         } catch (error) {
             console.error("Failed to fetch initial data:", error);
         }
-    }, [ myInfo.username ]);
+    }, [myInfo.username]);
 
     const updateReceiverMessage = useCallback((messageId: string, content: string) => {
         // Debounce message updates
@@ -58,7 +58,6 @@ export const useAIChat = (roomId: string, token: string): IChat => {
             );
         }, 50); // Adjust this delay as needed
     }, []);
-
     const startReceiving = useCallback(
         async (userMessage: string) => {
             if (!receiverInfo) return;
@@ -76,22 +75,24 @@ export const useAIChat = (roomId: string, token: string): IChat => {
                 datetime: new Date().toLocaleString(),
             };
 
-            setMessages((prev) => [ ...prev, newAssistantMessage ]);
+            setMessages((prev) => [...prev, newAssistantMessage]);
 
             try {
                 const response = await fetchAssistantMessage(
                     userMessage,
                     abortControllerRef.current.signal
                 );
+
                 if (response && response.body) {
                     const reader = response.body.getReader();
                     let messageContent = "";
+                    const decoder = new TextDecoder("utf-8", { fatal: true });
 
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) break;
 
-                        const chunk = new TextDecoder().decode(value);
+                        const chunk = decoder.decode(value, { stream: true });
                         const lines = chunk.split("\n\n");
 
                         for (const line of lines) {
@@ -111,8 +112,9 @@ export const useAIChat = (roomId: string, token: string): IChat => {
                 setLoading(false);
             }
         },
-        [ receiverInfo, updateReceiverMessage ]
+        [receiverInfo, updateReceiverMessage]
     );
+
 
     const handleSend = useCallback(() => {
         if (newMessage.trim()) {
@@ -124,11 +126,11 @@ export const useAIChat = (roomId: string, token: string): IChat => {
                 content: newMessage,
                 datetime: new Date().toLocaleString(),
             };
-            setMessages((prev) => [ ...prev, userMessage ]);
+            setMessages((prev) => [...prev, userMessage]);
             startReceiving(newMessage);
             setNewMessage("");
         }
-    }, [ newMessage, myInfo.username, myInfo.id, startReceiving ]);
+    }, [newMessage, myInfo.username, myInfo.id, startReceiving]);
 
     useEffect(() => {
         loadData();
@@ -138,7 +140,7 @@ export const useAIChat = (roomId: string, token: string): IChat => {
                 clearTimeout(messageUpdateTimeoutRef.current);
             }
         };
-    }, [ loadData ]);
+    }, [loadData]);
 
     return {
         messages,
