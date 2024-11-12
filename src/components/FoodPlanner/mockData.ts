@@ -15,7 +15,7 @@ export const mockFoods: FoodItem[] = [
     restaurant: "Starbucks",
     mealType: new Set([ "breakfast" ]),
     quantity: 15,
-    imageUrl: "/api/placeholder/400/300"
+    imageUrl: "/images/Overnight_Oats_with_Fruits.jpg"
   },
   {
     id: "B002",
@@ -29,7 +29,7 @@ export const mockFoods: FoodItem[] = [
     restaurant: "Coffee Bean & Tea Leaf",
     mealType: new Set([ "breakfast" ]),
     quantity: 20,
-    imageUrl: "/api/placeholder/400/300"
+    imageUrl: "/images/Greek_Yogurt_with_Berries.jpg"
   },
   {
     id: "B003",
@@ -43,7 +43,7 @@ export const mockFoods: FoodItem[] = [
     restaurant: "Lady M",
     mealType: new Set([ "breakfast" ]),
     quantity: 18,
-    imageUrl: "/api/placeholder/400/300"
+    imageUrl: "/images/Banana_Nut_Smoothie.jpg"
   },
   {
     id: "B004",
@@ -57,7 +57,7 @@ export const mockFoods: FoodItem[] = [
     restaurant: "Brunch Cafe",
     mealType: new Set([ "breakfast" ]),
     quantity: 16,
-    imageUrl: "/api/placeholder/400/300"
+    imageUrl: "/images/Avocado_Toast_with_Egg.jpg"
   },
   {
     id: "B005",
@@ -71,7 +71,7 @@ export const mockFoods: FoodItem[] = [
     restaurant: "Fitness Bar",
     mealType: new Set([ "breakfast" ]),
     quantity: 22,
-    imageUrl: "/api/placeholder/400/300"
+    imageUrl: "/images/Berry_Protein_Shake.jpg"
   },
 
   // Lunch items
@@ -87,7 +87,7 @@ export const mockFoods: FoodItem[] = [
     restaurant: "Food Republic",
     mealType: new Set([ "lunch" ]),
     quantity: 12,
-    imageUrl: "/api/placeholder/400/300"
+    imageUrl: "/images/Chicken_Brown_Rice_Bowl.jpg"
   },
   {
     id: "L002",
@@ -99,9 +99,9 @@ export const mockFoods: FoodItem[] = [
     sodium: 400,
     price: 14.00,
     restaurant: "Din Tai Fung",
-    mealType: new Set([ "lunch" ]),
+    mealType: new Set(["lunch"]),
     quantity: 8,
-    imageUrl: "/api/placeholder/400/300"
+    imageUrl: "/images/Grilled_Salmon_with_Quinoa.jpg"
   },
   {
     id: "L003",
@@ -113,9 +113,9 @@ export const mockFoods: FoodItem[] = [
     sodium: 500,
     price: 12.50,
     restaurant: "Sushi Tei",
-    mealType: new Set([ "lunch" ]),
+    mealType: new Set(["lunch"]),
     quantity: 14,
-    imageUrl: "/api/placeholder/400/300"
+    imageUrl: "/images/Beef_and_Veggie_Wrap.jpg"
   },
   {
     id: "L004",
@@ -127,9 +127,9 @@ export const mockFoods: FoodItem[] = [
     sodium: 300,
     price: 9.80,
     restaurant: "Green Eats",
-    mealType: new Set([ "lunch" ]),
+    mealType: new Set(["lunch"]),
     quantity: 10,
-    imageUrl: "/api/placeholder/400/300"
+    imageUrl: "/images/Vegan_Buddha_Bowl.jpg"
   },
   {
     id: "L005",
@@ -141,12 +141,11 @@ export const mockFoods: FoodItem[] = [
     sodium: 280,
     price: 8.50,
     restaurant: "Asian Bistro",
-    mealType: new Set([ "lunch" ]),
+    mealType: new Set(["lunch"]),
     quantity: 15,
-    imageUrl: "/api/placeholder/400/300"
+    imageUrl: "/images/Tofu_Stir_fry_with_Rice.jpg"
   },
 
-  // Dinner items
   {
     id: "D001",
     name: "Lentil Soup with Whole Grain Bread",
@@ -157,9 +156,9 @@ export const mockFoods: FoodItem[] = [
     sodium: 250,
     price: 7.00,
     restaurant: "Mall Food Court",
-    mealType: new Set([ "dinner" ]),
+    mealType: new Set(["dinner"]),
     quantity: 18,
-    imageUrl: "/api/placeholder/400/300"
+    imageUrl: "/images/Lentil_Soup_with_Whole_Grain_Bread.jpg"
   },
   {
     id: "D002",
@@ -171,9 +170,9 @@ export const mockFoods: FoodItem[] = [
     sodium: 290,
     price: 10.50,
     restaurant: "Thai Basil",
-    mealType: new Set([ "dinner" ]),
+    mealType: new Set(["dinner"]),
     quantity: 20,
-    imageUrl: "/api/placeholder/400/300"
+    imageUrl: "/images/Grilled_Chicken_Salad.jpg"
   },
   {
     id: "D003",
@@ -185,9 +184,9 @@ export const mockFoods: FoodItem[] = [
     sodium: 500,
     price: 15.00,
     restaurant: "The Manhattan STEAKHOUSE",
-    mealType: new Set([ "dinner" ]),
+    mealType: new Set(["dinner"]),
     quantity: 10,
-    imageUrl: "/api/placeholder/400/300"
+    imageUrl: "/images/Baked_Salmon_with_Sweet_Potato.jpg"
   },
   {
     id: "D004",
@@ -199,9 +198,9 @@ export const mockFoods: FoodItem[] = [
     sodium: 600,
     price: 12.00,
     restaurant: "Pizza Express",
-    mealType: new Set([ "dinner" ]),
+    mealType: new Set(["dinner"]),
     quantity: 25,
-    imageUrl: "/api/placeholder/400/300"
+    imageUrl: "/images/Spaghetti_with_Meatballs.jpg"
   },
   {
     id: "D005",
@@ -213,9 +212,9 @@ export const mockFoods: FoodItem[] = [
     sodium: 320,
     price: 10.00,
     restaurant: "Vegan Delight",
-    mealType: new Set([ "dinner" ]),
+    mealType: new Set(["dinner"]),
     quantity: 16,
-    imageUrl: "/api/placeholder/400/300"
+    imageUrl: "/images/Stuffed_Bell_Peppers_with_Quinoa.jpg"
   },
   {
     id: "D006",
@@ -227,8 +226,9 @@ export const mockFoods: FoodItem[] = [
     sodium: 450,
     price: 13.50,
     restaurant: "Asian Grill",
-    mealType: new Set([ "dinner" ]),
+    mealType: new Set(["dinner"]),
     quantity: 14,
-    imageUrl: "/api/placeholder/400/300"
+    imageUrl: "/images/Beef_Stir_fry_with_Vegetables.jpg"
   }
+
 ];
