@@ -13,7 +13,7 @@ export const mockFoods: FoodItem[] = [
     sodium: 124,
     price: 6.90,
     restaurant: "Starbucks",
-    mealType: new Set([ "breakfast" ]),
+    mealType: new Set(["breakfast"]),
     quantity: 15,
     imageUrl: "/images/Overnight_Oats_with_Fruits.jpg"
   },
@@ -27,7 +27,7 @@ export const mockFoods: FoodItem[] = [
     sodium: 80,
     price: 5.50,
     restaurant: "Coffee Bean & Tea Leaf",
-    mealType: new Set([ "breakfast" ]),
+    mealType: new Set(["breakfast"]),
     quantity: 20,
     imageUrl: "/images/Greek_Yogurt_with_Berries.jpg"
   },
@@ -41,7 +41,7 @@ export const mockFoods: FoodItem[] = [
     sodium: 50,
     price: 4.20,
     restaurant: "Lady M",
-    mealType: new Set([ "breakfast" ]),
+    mealType: new Set(["breakfast"]),
     quantity: 18,
     imageUrl: "/images/Banana_Nut_Smoothie.jpg"
   },
@@ -55,7 +55,7 @@ export const mockFoods: FoodItem[] = [
     sodium: 200,
     price: 7.50,
     restaurant: "Brunch Cafe",
-    mealType: new Set([ "breakfast" ]),
+    mealType: new Set(["breakfast"]),
     quantity: 16,
     imageUrl: "/images/Avocado_Toast_with_Egg.jpg"
   },
@@ -69,9 +69,9 @@ export const mockFoods: FoodItem[] = [
     sodium: 120,
     price: 6.00,
     restaurant: "Fitness Bar",
-    mealType: new Set([ "breakfast" ]),
+    mealType: new Set(["breakfast"]),
     quantity: 22,
-    imageUrl: "/images/Berry_Protein_Shake.jpg"
+    imageUrl: "/images/Berry_Protein_Shake.png"
   },
 
   // Lunch items
@@ -85,7 +85,7 @@ export const mockFoods: FoodItem[] = [
     sodium: 378,
     price: 8.90,
     restaurant: "Food Republic",
-    mealType: new Set([ "lunch" ]),
+    mealType: new Set(["lunch"]),
     quantity: 12,
     imageUrl: "/images/Chicken_Brown_Rice_Bowl.jpg"
   },
